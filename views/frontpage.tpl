@@ -12,7 +12,7 @@
   </div>
 % end
 
-  <section class="grid-sm">
+  <section class="grid-sm c2">
     <article>
       <header>
         <h3>File management</h3>
@@ -47,15 +47,28 @@
         hard rebuild may sometimes be necessary if you have deleted or moved
         files or directories.</p>
     </article>
+
+    <article>
+      <header>
+        <h3>Edit configuration</h3>
+      </header>
+      <p class="ta-c">
+        <a href="/_/admin/edit-config/" role="button" class="larger">Edit wmk_config.yaml</a>
+      </p>
+      <p><code>wmk_config.yaml</code> is the main configuration file for each site built with wmk. Take care when you edit it, since an invalid file will prevent your site from being built and thus updated.</p>
+    </article>
+
+    <article>
+      <header>
+        <h3>View site</h3>
+      </header>
+      <p class="ta-c">
+        <a href="/" role="button" class="larger">View the site</a>
+      </p>
+      <p>In addition to the admin pages, wmkAdmin runs a webserver for previewing the development version of the website. (You can see that it is the development version from the prominent link to Admin in the lower right corner of each page.)</p>
+    </article>
   </section>
 
-<h2>Configuration file</h2>
-
-<p>The contents of the <code>wmk_config.yaml</code> configuration file for
-  this site can be seen below. Note that this is purely for your reference; you
-  cannot change the configuration via this admin page.</p>
-
-<pre><code>{{ wmk_config_contents }}</code></pre>
 
 <h2>TODO</h2>
 
@@ -64,10 +77,9 @@
 <ul>
   <li>Committing changes (automatically) to git, if the site is under
 version control. Pushing, pulling as manual actions?</li>
-  <li>Editing <code>wmk_config.yaml</code>.</li>
-  <li>Add <code>assets</code>?</li>
+  <li>Add <code>assets</code> to directories that can be managed?</li>
   <li>Report on build errors.</li>
+  <li>View logs.</li>
   <li>Validate yaml files before saving?</li>
   <li>Better editor for text-based formats.</li>
-  <li>Change behaviour based on some wmk config settings.</li>
 </ul>

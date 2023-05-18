@@ -130,20 +130,29 @@ def content_file_save(section, filename):
     return save_file(section, filename, request)
 
 
+@get('/_/admin/edit-config/')
+@authorize
+def edit_config_form():
+    return edit_form(
+        None, 'wmk_config.yaml', os.path.join(BASEDIR, 'wmk_config.yaml'))
+
+@post('/_/admin/edit-config/')
+@authorize
+def edit_config_save():
+    return save_file(None, 'wmk_config.yaml', request)
+
+
 @route('/_/admin')
 @route('/_/admin/')
 @authorize
 def admin_frontpage():
     msg = get_flash_message(request) or ''
-    wcc = ''
-    with open(os.path.join(BASEDIR, 'wmk_config.yaml')) as f:
-        wcc = f.read()
     msg_status = 'warning'
     if msg.startswith('S:'):
         msg = msg[2:]
         msg_status = 'success'
     return template('frontpage.tpl', flash_message=msg,
-                    msg_status=msg_status, wmk_config_contents=wcc)
+                    msg_status=msg_status)
 
 
 @route('/_/admin/list/<section:re:content|data|static>/<dirname:re:.*>')
@@ -354,7 +363,9 @@ def is_logged_in(request):
 def edit_form(section, filename, full_path):
     with open(full_path) as f:
         contents = f.read()
-    return template('edit_form.tpl', filename=filename, contents=contents, section=section)
+    is_config = section is None and filename == 'wmk_config.yaml'
+    return template('edit_form.tpl', filename=filename,
+                    contents=contents, section=section, is_config=is_config)
 
 
 def handle_upload(request):
@@ -416,18 +427,23 @@ def upload_form():
 
 
 def save_file(section, filename, request):
-    root = os.path.join(BASEDIR, section)
+    is_config = section is None and filename == 'wmk_config.yaml'
+    root = BASEDIR if is_config else os.path.join(BASEDIR, section)
     full_path = os.path.join(root, filename)
     new_contents = request.forms.getunicode('contents')
     new_contents = new_contents.replace("\r\n", "\n")
     with open(full_path, 'w') as f:
         f.write(new_contents)
-    wmk_build()
-    display_path = os.path.join(section, filename)
-    display_dir, display_filename = os.path.split(display_path)
-    set_flash_message(request, 'Saved file "%s" in %s' % (display_filename, display_dir))
-    redirect('/_/admin/list/%s' % display_dir)
-    # return template('file_saved.tpl', dest_dir='content', filename=filename)
+    wmk_build('Saved file ' + full_path)
+    if is_config:
+        set_flash_message(
+            request, 'S:Updated main site configuration file, wmk_config.yaml')
+        redirect('/_/admin/')
+    else:
+        display_path = os.path.join(section, filename)
+        display_dir, display_filename = os.path.split(display_path)
+        set_flash_message(request, 'Saved file "%s" in %s' % (display_filename, display_dir))
+        redirect('/_/admin/list/%s' % display_dir)
 
 
 # ---------------------- Static routes below ----

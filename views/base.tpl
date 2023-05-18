@@ -19,9 +19,11 @@
             <li><a href="/_/admin/list/data/" class="text">Data</a></li>
             <li><a href="/_/admin/list/static/" class="text">Static</a></li>
           </ul>
+          % if not title == 'Login':
           <ul>
             <li><a href="/_/admin/logout/" role="button" style="margin:0; padding:0 var(--spacing)">Log out</a></li>
           </ul>
+          % end
         </nav>
       </div>
     </header>
