@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>{{ title }}</title>
     <link rel="stylesheet" href="https://avec.baldr.net/css/avec/avec.min.css" type="text/css">
     <style>

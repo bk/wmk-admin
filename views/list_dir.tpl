@@ -14,6 +14,14 @@
   % end
 </div>
 
+% if flash_message:
+  <div class="admonition success">
+    <p class="admonition-title">Success</p>
+    <p>{{ flash_message }}</p>
+  </div>
+% end
+
+% if dir_entries:
 <table>
   <tr>
     <th>Name</th>
@@ -36,6 +44,13 @@
     % if typ == 'file':
       <a href="/_/admin/edit/{{ section }}/{{ dirname }}{{ '/' if dirname else ''}}{{ it.name }}">Edit</a>
       <a href="/_/admin/delete/{{ section }}/{{ dirname }}{{ '/' if dirname else ''}}{{ it.name }}">Delete</a>
+      % if section == 'content' and it.name.endswith(('.md', '.html', '.rst', '.org')):
+        % if it.name.startswith('index.'):
+          <a href="/{{ dirname }}{{ '/' if dirname else ''}}" target="_blank">View</a>
+        % else:
+          <a href="/{{ dirname }}{{ '/' if dirname else ''}}{{ os.path.splitext(it.name)[0] }}/" target="_blank">View</a>
+        % end
+      % end
     % elif typ == 'dir':
       <a href="{{ prefix }}/{{ section }}/{{ dirname }}{{ '/' if dirname else ''}}{{ it.name }}">Open</a>
       % if not os.listdir(os.path.join(full_dirname, it.name)):
@@ -46,10 +61,8 @@
   </tr>
   % end
 </table>
+% else:
+<div class="admonition"><p>No files or subdirectories in this directory</p></div>
+% end
 
-<h2>Create new directory here</h2>
-<form action="/_/admin/create-dir/{{ section }}/{{ dirname }}" method="POST" class="grid">
-<label class="ta-r">Name of new directory</label>
-<input type="text" name="new_dir">
-<input type="submit" value="Create">
-</form>
+% include('create-here-modals.tpl', section=section, dirname=dirname)
