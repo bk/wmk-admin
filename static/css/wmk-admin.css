@@ -1,0 +1,7 @@
+:root {
+    --main-font: var(--sans-font);
+}
+textarea {
+    font-family: var(--mono-font);
+    font-size: smaller;
+}
