@@ -5,6 +5,7 @@ import datetime
 import string
 import subprocess
 import yaml
+import shutil
 import hashlib
 
 import bottle
@@ -98,6 +99,19 @@ def upload_post():
     return handle_upload(request)
 
 
+@get('/_/admin/build/')
+@authorize
+def build_site():
+    hard_rebuild = request.params.get('hard', False)
+    wmk_build('Manually requested', hard_rebuild)
+    msg = 'The site was rebuilt.'
+    if hard_rebuild:
+        msg += ' The contents of the htdocs directory and the cache were removed first (hard rebuild).'
+    # the S says that the status is success
+    set_flash_message(request, 'S:'+msg)
+    redirect('/_/admin/')
+
+
 @get('/_/admin/edit/<section:re:content|data|static>/<filename:re:.*>')
 @authorize
 def content_file_form(section, filename):
@@ -129,7 +143,12 @@ def admin_frontpage():
     wcc = ''
     with open(os.path.join(BASEDIR, 'wmk_config.yaml')) as f:
         wcc = f.read()
-    return template('frontpage.tpl', flash_message=msg, wmk_config_contents=wcc)
+    msg_status = 'warning'
+    if msg.startswith('S:'):
+        msg = msg[2:]
+        msg_status = 'success'
+    return template('frontpage.tpl', flash_message=msg,
+                    msg_status=msg_status, wmk_config_contents=wcc)
 
 
 @route('/_/admin/list/<section:re:content|data|static>/<dirname:re:.*>')
@@ -142,7 +161,63 @@ def list_dir(section, dirname):
     return template(
             'list_dir.tpl', section=section, dirname=dirname,
             dir_entries=dir_entries, full_dirname=full_dirname,
-            flash_message=flash_message)
+            flash_message=flash_message, directories=get_directories())
+
+@post('/_/admin/move/')
+@authorize
+def move_or_rename():
+    """
+      <form action="/_/admin/move/" method="POST">
+        <input type="hidden" name="from_dir" value="{{ from_dir }}">
+        <input type="hidden" name="orig_name" value="{{ orig_name }}">
+        <input type="hidden" name="is_dir" value="{{ '1' if is_dir else '0' }}">
+        <label>New name</label>
+        <input type="text" name="new_name" value="{{ orig_name }}">
+        <label>New directory</label>
+        <select name="dest_dir">
+          % for d in directories:
+            <option value="{{ d }}"{{ ' selected' if d == from_dir else '' }}>{{ d }}</option>
+          % end
+        </select>
+        <input type="submit" value="Rename/Move">
+    """
+    is_dir = request.forms.getunicode('is_dir') == '1'
+    from_dir = request.forms.getunicode('from_dir')
+    dest_dir = request.forms.getunicode('dest_dir')
+    orig_name = request.forms.getunicode('orig_name')
+    new_name = request.forms.getunicode('new_name')
+    okdirs = ('content', 'data', 'static')
+    if not from_dir.startswith(okdirs) and dest_dir.startswith(okdirs):
+        abort(403, 'Move/rename outside authorized directories attempted')
+    if not new_name or new_name.startswith('.'):
+        abort(403, 'New name must be filled out and must not start with a dot')
+    if from_dir == dest_dir and orig_name == new_name:
+        # No need to do anything
+        redirect('/_/admin/list/' + from_dir)
+    full_from_dir = os.path.join(BASEDIR, from_dir)
+    full_dest_dir = os.path.join(BASEDIR, dest_dir)
+    if not os.path.isdir(full_from_dir) and os.path.isdir(full_dest_dir):
+        abort(403, "Both origin and destination directories must exist")
+    full_from = os.path.join(full_from_dir, orig_name)
+    full_dest = os.path.join(full_dest_dir, new_name)
+    if not os.path.exists(full_from):
+        abort(403, "The origin file/directory does not exist")
+    if os.path.exists(full_dest):
+        abort(403, "The move/rename conflicts with an existing file/directory")
+    typ = 'directory' if is_dir else 'file'
+    if from_dir == dest_dir:
+        msg = 'Renamed a %s from %s to %s (in %s)' % (typ, orig_name, new_name, from_dir)
+    elif orig_name == new_name:
+        msg = 'Moved the %s %s from %s to %s' % (typ, orig_name, from_dir, dest_dir)
+    else:
+        msg = 'Moved the %s %s from %s to %s and gave it the new name %s' % (
+            typ, orig_name, from_dir, dest_dir, new_name)
+    shutil.move(full_from, full_dest)
+    set_flash_message(request, msg)
+    wmk_build(msg)
+    maybe_slash = '/' if from_dir in okdirs else ''
+    # NOTE: should we go to dest_dir instead?
+    redirect('/_/admin/list/%s%s' % (from_dir, maybe_slash))
 
 
 @post('/_/admin/create-dir/<section:re:content|data|static>/<dirname:re:.*>')
@@ -186,7 +261,7 @@ def create_file(section, dirname):
 
 @get('/_/admin/rmdir/<section:re:content|data|static>/<dirname:re:.+>')
 @authorize
-def list_dir(section, dirname):
+def remove_dir(section, dirname):
     full_dirname = os.path.join(BASEDIR, section, dirname)
     os.rmdir(full_dirname)
     list_dirname = re.sub(r'/[^/]+$', '', dirname) if '/' in dirname else ''
@@ -219,8 +294,17 @@ def get_config(dirname):
     return conf
 
 
-def wmk_build(msg=None):
+def wmk_build(msg=None, hard=False):
     start = datetime.datetime.now()
+    if hard and msg:
+        msg += ' - HARD REBUILD!'
+    if hard:
+        tmpdir = os.path.join(BASEDIR, 'tmp')
+        tmpfiles = os.listdir(tmpdir)
+        for fn in tmpfiles:
+            if fn.startswith('wmk_render_cache'):
+                os.unlink(os.path.join(tmpdir, fn))
+        shutil.rmtree(os.path.join(BASEDIR, 'htdocs'))
     ret = subprocess.run(["wmk", "b", "."], cwd=BASEDIR,
                          capture_output=True, text=True)
     if msg:

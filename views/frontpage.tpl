@@ -6,8 +6,8 @@
 </hgroup>
 
 % if flash_message:
-  <div class="admonition warning">
-    <p class="admonition-title">Warning</p>
+  <div class="admonition {{ msg_status }}">
+    <p class="admonition-title">{{ msg_status.title() }}</p>
     <p>{{ flash_message }}</p>
   </div>
 % end

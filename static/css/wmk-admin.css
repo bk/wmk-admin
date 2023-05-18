@@ -5,3 +5,15 @@ textarea {
     font-family: var(--mono-font);
     font-size: smaller;
 }
+
+table svg {
+    vertical-align: middle;
+}
+table.dir-entries a,
+table.dir-entries [role="link"] {
+    text-decoration: none;
+}
+table.dir-entries a:hover,
+table.dir-entries [role="link"]:hover {
+    text-decoration: underline;
+}
