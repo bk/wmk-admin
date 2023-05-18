@@ -34,31 +34,26 @@ def authorize(fn):
 
 # ----- Routed actions (other than static) below -----------
 
+
 @get('/_/admin/login/')
 def login_get():
     if is_logged_in(request):
         return template('soft_redirect.tpl')
-    conf = get_config(BASEDIR)
-    conf_err = False
-    if not conf.get('admin_password'):
-        conf_err = True
+    pw = get_configured_password(errors_fatal=False)
+    conf_err = not pw
     response.set_header('Cache-Control', 'no-store')
     return template('login.tpl', err=False, conf_err=conf_err)
 
 
 @post('/_/admin/login/')
 def login_post():
-    conf = get_config(BASEDIR)
-    if not conf.get('admin_password'):
-        abort(403, 'admin_password is missing from wmk_config.yaml')
-    # Preferably sha256-hashed
-    conf_pass = conf['admin_password']
+    conf_pass = get_configured_password()
     is_hashed = len(conf_pass) == 64 and re.match(r'^[0-9a-f]+$', conf_pass)
     submitted_pass = request.forms.getunicode('password', '')
     pass_match = False
     msg = None
     response.set_header('Cache-Control', 'no-store')
-    if is_hashed and hashlib.sha265(submitted_pass.encode('utf-8')).hexdigest() == conf_pass:
+    if is_hashed and hashlib.sha256(submitted_pass.encode('utf-8')).hexdigest() == conf_pass:
         pass_match = True
     if not is_hashed and conf_pass == submitted_pass:
         pass_match = True
@@ -285,13 +280,22 @@ def del_file(section, filename):
 
 # ------ Helpers below ------------
 
-def get_config(dirname):
-    "Will raise an error if wmk_config.yaml is not at the expected location."
-    config_file = os.path.join(dirname, 'wmk_config.yaml')
+def get_config(dirname, identifier='wmk_config'):
+    "Will raise an error if the yaml file is not at the expected location."
+    config_file = os.path.join(dirname, '%s.yaml' % identifier)
     conf = {}
     with open(config_file) as f:
         conf = yaml.safe_load(f)
     return conf
+
+
+def get_configured_password(errors_fatal=True):
+    conf = get_config(BASEDIR, 'wmk_admin')
+    # Preferably sha256-hashed
+    conf_pass = conf.get('admin_password', None)
+    if errors_fatal and not conf_pass:
+        abort(403, 'admin_password is missing from wmk_admin.yaml')
+    return conf_pass
 
 
 def wmk_build(msg=None, hard=False):
