@@ -117,8 +117,8 @@ def content_file_form(section, filename):
     found = re.search(r'\.(\w+)', filename)
     if found:
         ext = found.group(1)
-        if not ext in ('md', 'html', 'css', 'js'):
-            abort(403, "Forbidden")
+        if not ext in ('md', 'html', 'css', 'js', 'yaml', 'rst', 'org'):
+            abort(403, "Extension '{}' not supported".format(ext) )
     else:
         abort(405, "Bad input")
     return edit_form(section, filename, full_path)
@@ -151,13 +151,21 @@ def admin_frontpage():
     if msg.startswith('S:'):
         msg = msg[2:]
         msg_status = 'success'
+    conf = get_config(BASEDIR)
+    site = conf.get('site', {})
+    site_title = None
+    for k in ('name', 'title', 'site_name', 'site_title'):
+        site_title = site.get(k, None)
+        if site_title:
+            break
     return template('frontpage.tpl', flash_message=msg,
-                    msg_status=msg_status)
+                    msg_status=msg_status, site_title=site_title)
 
 
+@route('/_/admin/list/<section:re:content|data|static>')
 @route('/_/admin/list/<section:re:content|data|static>/<dirname:re:.*>')
 @authorize
-def list_dir(section, dirname):
+def list_dir(section, dirname=''):
     full_dirname = os.path.join(BASEDIR, section, dirname)
     dir_entries = [_ for _ in os.scandir(full_dirname)]
     dir_entries.sort(key=lambda x: x.name)
@@ -290,12 +298,18 @@ def del_file(section, filename):
 # ------ Helpers below ------------
 
 def get_config(dirname, identifier='wmk_config'):
-    "Will raise an error if the yaml file is not at the expected location."
+    """
+    Will NOT raise an error if the yaml file is not at the expected location,
+    only print a warning to the console.
+    """
     config_file = os.path.join(dirname, '%s.yaml' % identifier)
     conf = {}
-    with open(config_file) as f:
-        conf = yaml.safe_load(f)
-    return conf
+    try:
+        with open(config_file) as f:
+            conf = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("WARNING: File '{}' not found".format(config_file))
+    return conf or {}
 
 
 def get_configured_password(errors_fatal=True):

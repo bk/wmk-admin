@@ -2,7 +2,11 @@
 
 <hgroup>
 <h1>wmkAdmin</h1>
-<h2>A simple admin system for websites built in wmk</h2>
+% if site_title:
+  <h2>for the website <strong class="text-accent">{{ site_title }}</strong></h2>
+% else:
+  <h2>A simple admin system for websites built in wmk</h2>
+% end
 </hgroup>
 
 % if flash_message:
@@ -69,6 +73,7 @@
     </article>
   </section>
 
+% if False:
 
 <h2>TODO</h2>
 
@@ -83,3 +88,5 @@ version control. Pushing, pulling as manual actions?</li>
   <li>Validate yaml files before saving?</li>
   <li>Better editor for text-based formats.</li>
 </ul>
+
+% end

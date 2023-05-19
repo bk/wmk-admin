@@ -31,7 +31,9 @@
       {{! base }}
     </main>
     <footer class="reverse-theme">
-      <p class="ta-c"><a href="https://github.com/bk/wmk-admin/" class="plain">wmkAdmin on GitHub</a></p>
+      <p class="ta-c">
+        <a href="https://github.com/bk/wmk-admin/" class="plain" target="_blank">wmkAdmin on GitHub</a>
+      </p>
     </footer>
   </body>
 </html>

@@ -3,7 +3,7 @@
 % import os, datetime, hashlib
 % fileid = lambda s: hashlib.sha1(s.encode('utf-8')).hexdigest()[:7]
 % prefix = '/_/admin/list'
-% paths = [_ for _ in os.path.split(dirname) if _] if dirname else []
+% paths = dirname.strip('/').split('/') if dirname else []
 % edit_ok = ('.md', '.txt', '.html', '.rst', '.rest', '.org', '.markdown', '.mdwn', '.yaml', '.js', '.css')
 % view_ok = ('.md', '.html', '.rst', '.rest', '.org', '.markdown', '.mdwn')
 % current_path = "%s%s%s" % (section, '/' if dirname else '', dirname)
