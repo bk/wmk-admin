@@ -17,3 +17,39 @@ table.dir-entries a:hover,
 table.dir-entries [role="link"]:hover {
     text-decoration: underline;
 }
+table .actions svg.feather-trash {
+    color: var(--error);
+}
+table .actions svg:hover {
+    background: var(--accent);
+    color: var(--bg);
+    opacity: .8;
+}
+table .actions svg.feather-trash:hover {
+    background: var(--error);
+}
+table .icn {
+    color: var(--accent);
+    width: 36px;
+}
+
+@media (max-width: 479px) {
+    table .size, table .mtime, table .icn {
+        display: none;
+    }
+}
+@media (min-width: 768px) {
+    table .nam {
+        min-width: 340px;
+    }
+}
+@media (min-width: 960px) {
+    table .nam {
+        min-width: 540px;
+    }
+}
+
+[role="button"] svg {
+    vertical-align: text-bottom;
+    height: 1.2em;
+}
