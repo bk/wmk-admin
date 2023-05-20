@@ -4,8 +4,8 @@
 % fileid = lambda s: hashlib.sha1(s.encode('utf-8')).hexdigest()[:7]
 % prefix = '/_/admin/list'
 % paths = dirname.strip('/').split('/') if dirname else []
-% edit_ok = ('.md', '.txt', '.html', '.rst', '.rest', '.org', '.markdown', '.mdwn', '.yaml', '.js', '.css')
-% view_ok = ('.md', '.html', '.rst', '.rest', '.org', '.markdown', '.mdwn')
+% edit_ok = tuple(['.'+_ for _ in editable_exts])
+% view_ok = tuple(['.'+_ for _ in editable_exts[:18]])
 % current_path = "%s%s%s" % (section, '/' if dirname else '', dirname)
 
 <hgroup>
@@ -66,6 +66,7 @@
         <a href="/_/admin/edit/{{ current_path }}/{{ it.name }}">Edit</a>
       % end
       <a href="/_/admin/delete/{{ current_path }}/{{ it.name }}" onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
+      <label role="link" class="d-inl" for="move-{{ fileid(it.name) }}-modal">Move</label>
       % if section == 'content' and it.name.endswith(view_ok):
         % if it.name.startswith('index.'):
           <a href="/{{ dirname }}{{ '/' if dirname else ''}}" target="_blank">View</a>
@@ -80,9 +81,7 @@
       % if not os.listdir(os.path.join(full_dirname, it.name)):
         <a href="/_/admin/rmdir/{{ current_path }}/{{ it.name }}">Remove</a>
       % end
-    % end
-    % if typ in ('file', 'dir'):
-        <label role="link" class="d-inl" for="move-{{ fileid(it.name) }}-modal">Move</label>
+      <label role="link" class="d-inl" for="move-{{ fileid(it.name) }}-modal">Move</label>
     % end
     </td>
   </tr>

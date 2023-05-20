@@ -19,6 +19,45 @@ bottle.TEMPLATE_PATH = [os.path.join(os.path.dirname(__file__), 'views')]
 
 COOKIE_NAME = 'wmk_' + re.sub(r'\W', '', BASEDIR)
 
+EDITABLE_EXTENSIONS = (
+    # wmk content which can be handled without pandoc:
+    'md', 'mdwn', 'mdown', 'markdown', 'mmd', 'gfm', 'html', 'htm',
+    # wmk content which requires pandoc:
+    'org', 'rst', 'tex', 'man', 'rtf', 'textile', 'xml', 'jats', 'tei', 'docbook',
+    # other common text-based formats:
+    'yaml', 'yml', 'json', 'js', 'css', 'scss',
+    'csv', 'txt', 'sgml', 'ini', 'toml', 'svg', )
+
+# Map the above extensions to Ace Editor modes.
+# Without available Ace modes: org, man, rtf, csv, txt
+ACE_EDITOR_MODES = {
+    'md': 'markdown',
+    'mdwn': 'markdown',
+    'mdown': 'markdown',
+    'markdown': 'markdown',
+    'mmd': 'markdown',
+    'gfm': 'markdown',
+    'html': 'html',
+    'htm': 'html',
+    'rst': 'rst',
+    'tex': 'latex',
+    'textile': 'textile',
+    'xml': 'xml', # actually JATS by default
+    'jats': 'xml',
+    'tei': 'xml',
+    'docbook': 'xml',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'json': 'json',
+    'js': 'javascript',
+    'css': 'css',
+    'scss': 'scss',
+    'sgml': 'html',
+    'ini': 'ini',
+    'toml': 'toml',
+    'svg': 'xml',
+}
+
 
 # ----- Decorator(s) --------
 
@@ -117,7 +156,7 @@ def content_file_form(section, filename):
     found = re.search(r'\.(\w+)', filename)
     if found:
         ext = found.group(1)
-        if not ext in ('md', 'html', 'css', 'js', 'yaml', 'rst', 'org'):
+        if not ext in EDITABLE_EXTENSIONS:
             abort(403, "Extension '{}' not supported".format(ext) )
     else:
         abort(405, "Bad input")
@@ -135,6 +174,7 @@ def content_file_save(section, filename):
 def edit_config_form():
     return edit_form(
         None, 'wmk_config.yaml', os.path.join(BASEDIR, 'wmk_config.yaml'))
+
 
 @post('/_/admin/edit-config/')
 @authorize
@@ -171,9 +211,11 @@ def list_dir(section, dirname=''):
     dir_entries.sort(key=lambda x: x.name)
     flash_message = get_flash_message(request)
     return template(
-            'list_dir.tpl', section=section, dirname=dirname,
-            dir_entries=dir_entries, full_dirname=full_dirname,
-            flash_message=flash_message, directories=get_directories())
+        'list_dir.tpl', section=section, dirname=dirname,
+        dir_entries=dir_entries, full_dirname=full_dirname,
+        flash_message=flash_message, directories=get_directories(),
+        editable_exts=EDITABLE_EXTENSIONS,
+    )
 
 @post('/_/admin/move/')
 @authorize
@@ -379,7 +421,8 @@ def edit_form(section, filename, full_path):
         contents = f.read()
     is_config = section is None and filename == 'wmk_config.yaml'
     return template('edit_form.tpl', filename=filename,
-                    contents=contents, section=section, is_config=is_config)
+                    contents=contents, section=section, is_config=is_config,
+                    editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES)
 
 
 def handle_upload(request):
