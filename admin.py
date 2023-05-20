@@ -208,13 +208,22 @@ def admin_frontpage():
 def list_dir(section, dirname=''):
     full_dirname = os.path.join(BASEDIR, section, dirname)
     dir_entries = [_ for _ in os.scandir(full_dirname)]
-    dir_entries.sort(key=lambda x: x.name)
+    sort_by_date = request.params.get('sort', '') == 'date'
+    if sort_by_date:
+        ordering = {
+            'reverse': True,
+            'key': lambda x: x.stat().st_mtime,
+        }
+    else:
+        ordering = {'key': lambda x: x.name}
+    dir_entries.sort(**ordering)
     flash_message = get_flash_message(request)
+    svg_dir = os.path.join(bottle.TEMPLATE_PATH[0], 'svg')
     return template(
         'list_dir.tpl', section=section, dirname=dirname,
         dir_entries=dir_entries, full_dirname=full_dirname,
         flash_message=flash_message, directories=get_directories(),
-        editable_exts=EDITABLE_EXTENSIONS,
+        editable_exts=EDITABLE_EXTENSIONS, svg_dir=svg_dir,
     )
 
 @post('/_/admin/move/')
