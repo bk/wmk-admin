@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
+
 import os
+import sys
 import re
 import random
 import datetime
@@ -58,6 +61,15 @@ ACE_EDITOR_MODES = {
     'svg': 'xml',
 }
 
+wmkenv_info = subprocess.run(["wmk", "env", "."], cwd=BASEDIR,
+                         capture_output=True, text=True)
+wfound = re.search(r'wmk home: (.*)', wmkenv_info.stdout)
+if wfound:
+    sys.path.append(wfound.group(1))
+    from wmk import preview_single
+else:
+    print("WARNING: Could not load information on wmk environment.")
+    print("         Preview will not be available.")
 
 # ----- Decorator(s) --------
 
@@ -180,6 +192,14 @@ def edit_config_form():
 @authorize
 def edit_config_save():
     return save_file(None, 'wmk_config.yaml', request)
+
+
+@post('/_/admin/preview/')
+def preview_html():
+    filename = request.params.get('filename')
+    source = request.params.get('source')
+    html = preview_single(BASEDIR, filename, source)
+    return html
 
 
 @route('/_/admin')
@@ -429,9 +449,11 @@ def edit_form(section, filename, full_path):
     with open(full_path) as f:
         contents = f.read()
     is_config = section is None and filename == 'wmk_config.yaml'
+    conf = get_config(BASEDIR,  'wmk_admin') or {}
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
-                    editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES)
+                    editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
+                    preview_css=conf.get('preview_css', ''))
 
 
 def handle_upload(request):
@@ -553,4 +575,21 @@ def admin_marker():
 
 
 if __name__ == '__main__':
-    run(host='localhost', port=7077, debug=True)
+    host = 'localhost'
+    port = 7077
+    try:
+        basedir = os.path.split(os.path.dirname(__file__))[0]
+        config_file = os.path.join(basedir, 'wmk_admin.yaml')
+        conf = {}
+        if os.path.exists(config_file):
+            with open(config_file) as f:
+                conf = yaml.safe_load(f)
+        else:
+            print("WARNING: wmk_admin.yaml not found in %s" % basedir)
+        if 'port' in conf:
+            port = conf['port']
+        if 'host' in conf:
+            host = conf['host']
+    except Exception as e:
+        print("WARNING: Error in loading wmk_admin.yaml: %s" % str(e))
+    run(host=host, port=port, debug=True)

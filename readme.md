@@ -9,24 +9,22 @@ wmkAdmin is a simple admin system for websites built with [wmk].
 3. Create a file called `wmk_admin.yaml` in the project directory. It must
    contain an `admin_password` value. (The password should preferably be hashed
    with SHA-256 but can be written as plaintext if desired).
-4. Run `python admin/admin.py`. ([Bottle] needs to be installed).
-5. Access the admin system on `http://localhost:7077/_/admin/` and log in.
+4. Run either (a) `python admin/admin.py` ([Bottle] needs to be installed),
+   or (b) `wmk admin .` (with wmk version 1.3.0 or greater).
+5. Access the admin system on `http://localhost:7077/_/admin/` (or with the
+   `host` and `port` configured in the `wmk_admin.yaml` file) and log in.
 
 ## TODO
 
 Potential features and improvements in the future:
 
-- Make a few things configurable in `wmk_admin.yaml` (beyond just the password).
-- Accept command-line arguments for such things as IP address and port.
 - Git interaction.
-- Integrate better with wmk.
-- Preview editing changes before saving.
 - Validate yaml and json before saving.
 - Catch more errors and notify sensibly about them.
 - View build logs.
-- Deployment action (configurable in `wmk_admin.yaml`).
-- Rebuild site on login (?)
-- Work with `assets` directory in addition to the other three (?)
+- Deployment action (configurable in either `wmk_admin.yaml` or
+  `wmk_config.yaml`).
+- Manage `assets` directory in addition to the other three (?)
 
 ## License
 
