@@ -2,6 +2,7 @@
 
 import os
 import sys
+import io
 import re
 import random
 import datetime
@@ -61,15 +62,16 @@ ACE_EDITOR_MODES = {
     'svg': 'xml',
 }
 
+# Find out where wmk resides and add it to the python path
 wmkenv_info = subprocess.run(["wmk", "env", "."], cwd=BASEDIR,
                          capture_output=True, text=True)
 wfound = re.search(r'wmk home: (.*)', wmkenv_info.stdout)
 if wfound:
     sys.path.append(wfound.group(1))
-    from wmk import preview_single
+    import wmk
 else:
-    print("WARNING: Could not load information on wmk environment.")
-    print("         Preview will not be available.")
+    print("ERROR: Could not load wmk environment. Is wmk installed?")
+    sys.exit(1)
 
 # ----- Decorator(s) --------
 
@@ -198,7 +200,7 @@ def edit_config_save():
 def preview_html():
     filename = request.params.get('filename')
     source = request.params.get('source')
-    html = preview_single(BASEDIR, filename, source)
+    html = wmk.preview_single(BASEDIR, filename, source)
     return html
 
 
@@ -403,8 +405,11 @@ def wmk_build(msg=None, hard=False):
             if fn.startswith('wmk_render_cache'):
                 os.unlink(os.path.join(tmpdir, fn))
         shutil.rmtree(os.path.join(BASEDIR, 'htdocs'))
-    ret = subprocess.run(["wmk", "b", "."], cwd=BASEDIR,
-                         capture_output=True, text=True)
+    old_stdout = sys.stdout
+    tmp_stdout = io.StringIO()
+    sys.stdout = tmp_stdout
+    wmk.main(BASEDIR)
+    sys.stdout = old_stdout
     if msg:
         logfile = os.path.join(BASEDIR, 'tmp/admin.log')
         end = datetime.datetime.now()
@@ -412,7 +417,11 @@ def wmk_build(msg=None, hard=False):
         with open(logfile, 'a') as f:
             f.write("\n=====\nRan wmk build. Reason: %s\n" % msg)
             f.write("[Timing: %s to %s; duration=%s]\n" % (str(start), str(end), str(duration)))
-            f.write(ret.stdout)
+            show_lines = [_ for _ in tmp_stdout.getvalue().split("\n")
+                          if 'WARN' in _ or 'ERR' in _]
+            if show_lines:
+                f.write("\n".join(show_lines)+"\n")
+    tmp_stdout.close()
 
 
 def get_flash_message(request):
