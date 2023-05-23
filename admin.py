@@ -62,6 +62,10 @@ ACE_EDITOR_MODES = {
     'svg': 'xml',
 }
 
+# Extensions for images and attachments (used on the edit page):
+IMG_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif', 'svg', )
+ATTACHMENT_EXTENSIONS = ('pdf', 'docx', 'odt', 'zip', 'tar', 'gz', )
+
 # Find out where wmk resides and add it to the python path
 wmkenv_info = subprocess.run(["wmk", "env", "."], cwd=BASEDIR,
                          capture_output=True, text=True)
@@ -187,13 +191,11 @@ def content_file_form(section, filename):
     full_path = os.path.join(root, filename)
     if not os.path.isfile(full_path):
         abort(404, "Not found")
-    found = re.search(r'\.(\w+)', filename)
-    if found:
-        ext = found.group(1)
-        if not ext in EDITABLE_EXTENSIONS:
-            abort(403, "Extension '{}' not supported".format(ext) )
-    else:
-        abort(405, "Bad input")
+    ext = os.path.splitext(filename)[1]
+    if ext:
+        ext = ext[1:]
+    if not ext in EDITABLE_EXTENSIONS:
+        abort(403, "Extension '{}' not supported".format(ext) )
     return edit_form(section, filename, full_path)
 
 
@@ -485,10 +487,25 @@ def edit_form(section, filename, full_path):
     msg = get_flash_message(request) or ''
     if msg.startswith('S:'):
         msg = msg[2:]
+    attachment_dir, fn = os.path.split(filename)
+    fn_base, fn_ext = os.path.splitext(fn)
+    potential_attachments = fn_ext[1:] in EDITABLE_EXTENSIONS[:18]
+    attachment_dir = os.path.join(section, attachment_dir).strip('/')
+    nearby_files = []
+    if potential_attachments:
+        if not os.path.splitext(fn)[0] == 'index':
+            attachment_dir = os.path.join(attachment_dir, fn_base)
+        if os.path.isdir(os.path.join(BASEDIR, attachment_dir)):
+            nearby_files = [_ for _ in os.listdir(os.path.join(BASEDIR, attachment_dir))
+                            if _.endswith(IMG_EXTENSIONS)
+                            or _.endswith(ATTACHMENT_EXTENSIONS)]
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
                     editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
-                    preview_css=conf.get('preview_css', ''), flash_message=msg)
+                    img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS,
+                    preview_css=conf.get('preview_css', ''), flash_message=msg,
+                    potential_attachments=potential_attachments,
+                    attachment_dir=attachment_dir, nearby_files=nearby_files)
 
 
 def handle_upload(request):
