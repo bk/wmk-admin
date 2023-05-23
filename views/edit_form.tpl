@@ -26,15 +26,23 @@
 % end
 </hgroup>
 
+% if flash_message:
+  <div class="admonition success">
+    <p class="admonition-title">Success</p>
+    <p>{{ flash_message }}</p>
+  </div>
+% end
+
 % form_action = 'edit-config/' if is_config else 'edit/%s/%s' % (section, filename)
 
 <form action="/_/admin/{{ form_action }}" method="POST">
   <div id="ace-editor" class="mb-1 ba-1" style="height:596px;max-height:80vh">{{ contents }}</div>
   <div><textarea rows="20" cols="80" id="file-contents" name="contents" style="display:none">{{ contents }}</textarea></div>
   % if filename.endswith(content_exts):
-  <div class="grid">
+  <div class="grid-sm">
     <a href="#" onclick="return show_preview()">Preview text</a>
-    <input type="submit" value="Save">
+    <input type="submit" name="save_and_edit" value="Save and keep editing">
+    <input type="submit" name="save_and_close" value="Save and close">
   </div>
   % else:
   <div><input type="submit" value="Save"></div>

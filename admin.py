@@ -459,10 +459,11 @@ def edit_form(section, filename, full_path):
         contents = f.read()
     is_config = section is None and filename == 'wmk_config.yaml'
     conf = get_config(BASEDIR,  'wmk_admin') or {}
+    msg = get_flash_message(request) or ''
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
                     editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
-                    preview_css=conf.get('preview_css', ''))
+                    preview_css=conf.get('preview_css', ''), flash_message=msg)
 
 
 def handle_upload(request):
@@ -532,15 +533,19 @@ def save_file(section, filename, request):
     with open(full_path, 'w') as f:
         f.write(new_contents)
     wmk_build('Saved file ' + full_path)
+    redir_url = ''
     if is_config:
         set_flash_message(
             request, 'S:Updated main site configuration file, wmk_config.yaml')
-        redirect('/_/admin/')
+        redir_url = '/_/admin/'
     else:
         display_path = os.path.join(section, filename)
         display_dir, display_filename = os.path.split(display_path)
         set_flash_message(request, 'Saved file "%s" in %s' % (display_filename, display_dir))
-        redirect('/_/admin/list/%s' % display_dir)
+        redir_url = '/_/admin/list/%s' % display_dir
+    if 'save_and_edit' in request.forms:
+        redir_url = request.url
+    redirect(redir_url)
 
 
 # ---------------------- Static routes below ----
