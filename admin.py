@@ -160,6 +160,26 @@ def build_site():
     redirect('/_/admin/')
 
 
+@get('/_/admin/deploy/')
+@authorize
+def deploy_site():
+    conf = get_config(BASEDIR, 'wmk_admin')
+    deploy_command = conf.get('deploy')
+    if deploy_command:
+        wmk_build('Rebuilding before DEPLOY action')
+        depl_res = subprocess.run(deploy_command, cwd=BASEDIR,
+                                  capture_output=True, text=True)
+        logfile = os.path.join(BASEDIR, 'tmp/admin.log')
+        with open(logfile, 'a') as f:
+            f.write("\n=====\nRan DEPLOY at %s. Output:\n" % str(datetime.datetime.now()))
+            if depl_res.stdout:
+                f.write(depl_res.stdout)
+        set_flash_message(request, 'S:Rebuilt and published site (ran deployment command).')
+    else:
+        set_flash_message('No deployment command specified in configuration file')
+    redirect('/_/admin/')
+
+
 @get('/_/admin/edit/<section:re:content|data|static>/<filename:re:.*>')
 @authorize
 def content_file_form(section, filename):
@@ -215,13 +235,16 @@ def admin_frontpage():
         msg_status = 'success'
     conf = get_config(BASEDIR)
     site = conf.get('site', {})
+    adm_conf = get_config(BASEDIR, 'wmk_admin')
+    deploy = adm_conf.get('deploy', False)
     site_title = None
     for k in ('name', 'title', 'site_name', 'site_title'):
         site_title = site.get(k, None)
         if site_title:
             break
     return template('frontpage.tpl', flash_message=msg,
-                    msg_status=msg_status, site_title=site_title)
+                    msg_status=msg_status, site_title=site_title,
+                    deploy=deploy)
 
 
 @route('/_/admin/list/<section:re:content|data|static>')
@@ -460,6 +483,8 @@ def edit_form(section, filename, full_path):
     is_config = section is None and filename == 'wmk_config.yaml'
     conf = get_config(BASEDIR,  'wmk_admin') or {}
     msg = get_flash_message(request) or ''
+    if msg.startswith('S:'):
+        msg = msg[2:]
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
                     editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
@@ -524,12 +549,63 @@ def upload_form():
     return template('upload_form.tpl', dest_dirs=dest_dirs)
 
 
+def maybe_add_metadata(text, metafields):
+    """
+    Add the specified YAML metadata fields to the document if they are missing.
+    If the document has no metadata block, it will be added.
+
+    Currently only the metafields `date`, `modified_date` and `created_date` are
+    supported.  If specified, each is added if missing. In addition,
+    `modified_date` will be updated even if present.
+    """
+    metafields = [_ for _ in metafields
+                  if _ in ('date', 'modified_date', 'created_date')]
+    if not metafields:
+        return text
+    text = text.replace("\r\n", "\n")
+    now = str(datetime.datetime.now())[:16]
+    add = []
+    chg = {}
+    for field in metafields:
+        add.append({'field': field, 'val': '%s: "%s"' % (field, now)})
+    if 'modified_date' in metafields:
+        chg = {'field': 'modified_date', 'val': 'modified_date: "%s"' % now}
+    if text.startswith("---\n"):
+        prepend = ''
+        found = re.search(r'^---\n(.*?)\n---\n', text, flags=re.S)
+        if found:
+            meta_block = found.group(1)
+            for it in add:
+                if re.search(r'^%s:' % it['field'], meta_block, flags=re.M):
+                    continue
+                text = text.replace("---\n", "---\n%s\n" % it['val'], 1)
+            if chg and re.search(r'^%s:' % chg['field'], meta_block, flags=re.M):
+                text = re.sub(
+                    r'^%s:.*' % chg['field'], chg['val'],
+                    text, flags=re.M, count=1)
+    else:
+        prepend = "---\n"
+        for it in add:
+            prepend += it['val'] + "\n"
+        prepend += "---\n"
+        text = prepend + text
+    return text
+
+
 def save_file(section, filename, request):
     is_config = section is None and filename == 'wmk_config.yaml'
     root = BASEDIR if is_config else os.path.join(BASEDIR, section)
     full_path = os.path.join(root, filename)
     new_contents = request.forms.getunicode('contents')
     new_contents = new_contents.replace("\r\n", "\n")
+    conf = get_config(BASEDIR, 'wmk_admin') or {}
+    auto_metadata = conf.get('auto_metadata') or {}
+    ext = os.path.splitext(filename)[1]
+    if auto_metadata and ext[1:] in auto_metadata:
+        # auto_metadata is a map from file extension to list of datetime
+        # fields to be automatically added/updated.
+        new_contents = maybe_add_metadata(
+            new_contents, auto_metadata[ext[1:]])
     with open(full_path, 'w') as f:
         f.write(new_contents)
     wmk_build('Saved file ' + full_path)

@@ -40,7 +40,7 @@
   <div><textarea rows="20" cols="80" id="file-contents" name="contents" style="display:none">{{ contents }}</textarea></div>
   % if filename.endswith(content_exts):
   <div class="grid-sm">
-    <a href="#" onclick="return show_preview()">Preview text</a>
+    <a href="#" onclick="return show_preview()">Quick preview</a>
     <input type="submit" name="save_and_edit" value="Save and keep editing">
     <input type="submit" name="save_and_close" value="Save and close">
   </div>
@@ -68,8 +68,8 @@
       <div class="ta-l" id="preview"></div>
       <footer>
         <p class="p-2 smaller">
-          <strong>Note:</strong> The preview only shows the HTML output of the conversion process, not the final page.
-          Therefore the appearance will be different.
+          <strong>Note:</strong> This preview only shows the HTML output of the conversion process, not the entire page.
+          For a better representation, click <em>Save and keep editing</em> followed by <em>View on site</em>.
         </p>
       </footer>
     </article>

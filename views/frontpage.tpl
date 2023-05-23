@@ -29,31 +29,38 @@
         folders. Links to these three base directories are always present in the
         navigation bar at the top.
       </p>
-      <p>You can use the file manager to edit, delete, view, rename or move existing
-        files, as well as to add new files, either via upload or simply by creating an
-        empty file with a name of your choosing. Each change triggers a normal rebuild
-        of the site.</p>
+      <p>You can use the file manager to <em>edit</em>, <em>delete</em>,
+        <em>view</em> or <em>rename/move</em> existing files, as well as to <em>add</em>
+        new files, either via <em>upload</em> or simply by creating an
+        <em>empty</em> file with a name of your choosing.</p>
     </article>
 
     <article>
       <header>
-        <h3>Rebuild site</h3>
+        <h3>Rebuild {{ 'or publish' if deploy else 'site' }}</h3>
       </header>
 
       <p class="ta-c">
         <a href="/_/admin/build/" role="button" class="larger">
           % include('svg/command.svg')
           Normal build</a>
-        <a href="/_/admin/build/?hard=1" role="button" class="larger">
+        <a href="/_/admin/build/?hard=1" role="button" class="larger bg-error">
           % include('svg/coffee.svg')
           Hard rebuild</a>
       </p>
 
-      <p><strong>Note:</strong> A hard rebuild means that before building the site,
+      <p{{! ' class="m-0"' if deploy else '' }}><strong>Note:</strong>
+        A hard rebuild means that before building the site,
         both the rendering cache and all files in <code>htdocs/</code> are deleted. On
-        a large or complex site, this may take several minutes! Nevertheless, a
-        hard rebuild may sometimes be necessary if you have deleted or moved
-        files or folders.</p>
+        a large or complex site, this may take several minutes and should only
+        be done for a good reason.</p>
+      % if deploy:
+        <p class="ta-c">
+          <a href="/_/admin/deploy/" role="button" class="larger bg-success">
+          % include('svg/upload-cloud.svg')
+          Publish site</a>
+        </p>
+      % end
     </article>
 
     <article>
