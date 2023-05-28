@@ -76,6 +76,12 @@
   </div>
 % end
 
+% if potential_attachments:
+<div id="att-container">
+  % include('edit-attachments.tpl', att_dir=attachment_dir, files=nearby_files, msg=None)
+</div>
+% end
+
 <script src="/_/js/ace/ace.js"></script>
 <script src="/_/js/ace/theme-textmate.js"></script>
 <script src="/_/js/ace/theme-github_dark.js"></script>
@@ -133,4 +139,36 @@ function show_preview() {
   });
   return false;
 }
+
+% if potential_attachments:
+async function upload_attachment() {
+  const form_data = new FormData();
+  const filefield = document.getElementById('upload');
+  form_data.append("attachment_dir", "{{ attachment_dir }}");
+  form_data.append("upload", filefield.files[0])
+  try {
+    const response = await fetch("/_/admin/edit-upload/", {
+      method: "POST",
+      body: form_data
+    });
+    const ret = await response.blob();
+    return ret.text();
+  } catch (error) {
+    console.error("Upload Error:", error);
+  }
+}
+function submit_attachment_upload() {
+  const upl = document.getElementById('upload');
+  if (! upl.files.length > 0) return;
+  const container = document.getElementById('att-container');
+  const btn = document.getElementById('start-upload');
+  const area = document.getElementById('att-container-inner');
+  btn.disabled = true;
+  area.style.opacity = '0.3';
+  upload_attachment().then((data) => {
+    container.innerHTML = data;
+  });
+  return false;
+}
+% end
 </script>

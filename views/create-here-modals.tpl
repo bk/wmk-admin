@@ -1,8 +1,12 @@
-<p>
-<label for="create-dir-modal" role="button" class="d-inl">{{! svg['folder-plus'] }} Create folder</label>
-<label for="create-file-modal" role="button" class="d-inl">{{! svg['file-plus'] }} Create file</label>
-<label for="upload-file-modal" role="button" class="d-inl">{{! svg['upload'] }} Upload file</label>
-</p>
+<div class="mt-2 mb-2">
+  <label for="create-dir-modal" role="button" class="d-inl">{{! svg['folder-plus'] }} Create folder</label>
+  <label for="create-file-modal" role="button" class="d-inl">{{! svg['file-plus'] }} Create file</label>
+  <label for="upload-file-modal" role="button" class="d-inl">{{! svg['upload'] }} Upload file</label>
+  <form class="d-inl" action="./" method="GET">
+    <input type="hidden" name="sort" value="{{ 'date' if sort_by_date else 'name' }}">
+    <input type="text" class="d-inl m-0" size="12" name="search" value="{{ search if search else '' }}" placeholder="Search">
+  </form>
+</div>
 
 <div class="modal">
   <input id="create-dir-modal" type="checkbox" />

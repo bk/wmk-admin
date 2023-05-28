@@ -35,7 +35,7 @@ svg = dict([ (os.path.splitext(it)[0], slurp(os.path.join(svg_dir, it))) for it 
   </div>
 % end
 
-% include('create-here-modals.tpl', section=section, dirname=dirname, svg=svg)
+% include('create-here-modals.tpl', section=section, dirname=dirname, svg=svg, sort_by_date=sort_by_date, search=search)
 
 % if dir_entries:
 <div class="x-scroll">
@@ -46,7 +46,7 @@ svg = dict([ (os.path.splitext(it)[0], slurp(os.path.join(svg_dir, it))) for it 
     <th class="ta-r size">Size</th>
     <th class="mtime"><a href="?sort=date">Modified</a></th>
     <th class="ta-r">Actions</th>
-    </tr>
+   </tr>
   </tr>
   % for it in dir_entries:
     % stat = it.stat()
@@ -98,6 +98,29 @@ svg = dict([ (os.path.splitext(it)[0], slurp(os.path.join(svg_dir, it))) for it 
 </div>
 % else:
 <div class="admonition"><p>No files or subdirectories in this directory</p></div>
+% end
+
+% if paginated:
+<div class="prevnext mt-2 mb-4 bg-contrast ta-c p-1">
+  <div class="smaller">Page {{page}} of {{pagecount}} ({{entry_count}} files/directories{{ f' (out of a total of {total_entries})' if total_entries != entry_count else ''}})</div>
+  <div>[<strong>
+    % if page == 1:
+    <span class="text-muted">« Previous</span>
+    % else:
+    <a href="./?p={{ page - 1}}{{ '&sort=date' if sort_by_date else '' }}{{ f'&search={search}' if search else '' }}">« Previous</a>
+    % end
+    |
+    % if page == pagecount:
+    <span class="text-muted">Next »</span>
+    % else:
+    <a href="./?p={{ page + 1}}{{ '&sort=date' if sort_by_date else '' }}{{ f'&search={search}' if search else '' }}">Next »</a>
+    % end
+    </strong>]</div>
+</div>
+% elif total_entries != entry_count:
+<div class="prevnext mt-2 mb-4 bg-contrast ta-c p-1">
+  <div class="smaller">Showing {{ entry_count }} entries (out of a total of {{ total_entries }} in this folder)</div>
+</div>
 % end
 
 % for it in dir_entries:

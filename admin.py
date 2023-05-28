@@ -151,6 +151,12 @@ def upload_post():
     return handle_upload(request)
 
 
+@post('/_/admin/edit-upload/')
+@authorize
+def edit_upload():
+    return handle_attachment_upload(request)
+
+
 @get('/_/admin/build/')
 @authorize
 def build_site():
@@ -253,8 +259,12 @@ def admin_frontpage():
 @route('/_/admin/list/<section:re:content|data|static>/<dirname:re:.*>')
 @authorize
 def list_dir(section, dirname=''):
+    start = datetime.datetime.now()
     full_dirname = os.path.join(BASEDIR, section, dirname)
-    dir_entries = [_ for _ in os.scandir(full_dirname)]
+    if not os.path.exists(full_dirname):
+        abort(404, f"Directory {full_dirname} not found")
+    dir_entries = [_ for _ in os.scandir(full_dirname)
+                   if not _.name in ('.git', '.gitignore')]
     sort_by_date = request.params.get('sort', '') == 'date'
     if sort_by_date:
         ordering = {
@@ -264,13 +274,37 @@ def list_dir(section, dirname=''):
     else:
         ordering = {'key': lambda x: x.name}
     dir_entries.sort(**ordering)
+    total_entries = len(dir_entries)
+    search = request.params.getunicode('search')
+    if search and search.strip():
+        search_expr = wmk.slugify(search)
+        if search_expr:
+            keep = []
+            for it in dir_entries:
+                if search_expr in it.name:
+                    keep.append(it)
+            dir_entries = keep
     flash_message = get_flash_message(request)
     svg_dir = os.path.join(bottle.TEMPLATE_PATH[0], 'svg')
+    end = datetime.datetime.now()
+    page = int(request.params.get('p', 1))
+    pagesize = 50
+    pagecount = 1
+    paginated = len(dir_entries) > pagesize
+    entry_count = len(dir_entries)
+    if paginated:
+        pagecount = len(dir_entries) // pagesize
+        if len(dir_entries) % 100:
+            pagecount += 1
+        dir_entries = dir_entries[(page-1)*pagesize:page*pagesize]
     return template(
         'list_dir.tpl', section=section, dirname=dirname,
         dir_entries=dir_entries, full_dirname=full_dirname,
         flash_message=flash_message, directories=get_directories(),
         editable_exts=EDITABLE_EXTENSIONS, svg_dir=svg_dir,
+        paginated=paginated, pagecount=pagecount, page=page,
+        entry_count=entry_count, sort_by_date=sort_by_date,
+        search=search, total_entries=total_entries,
     )
 
 @post('/_/admin/move/')
@@ -496,9 +530,7 @@ def edit_form(section, filename, full_path):
         if not os.path.splitext(fn)[0] == 'index':
             attachment_dir = os.path.join(attachment_dir, fn_base)
         if os.path.isdir(os.path.join(BASEDIR, attachment_dir)):
-            nearby_files = [_ for _ in os.listdir(os.path.join(BASEDIR, attachment_dir))
-                            if _.endswith(IMG_EXTENSIONS)
-                            or _.endswith(ATTACHMENT_EXTENSIONS)]
+            nearby_files = get_potential_attachments(attachment_dir)
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
                     editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
@@ -506,6 +538,16 @@ def edit_form(section, filename, full_path):
                     preview_css=conf.get('preview_css', ''), flash_message=msg,
                     potential_attachments=potential_attachments,
                     attachment_dir=attachment_dir, nearby_files=nearby_files)
+
+
+def get_potential_attachments(attachment_dir):
+    fulldir = os.path.join(BASEDIR, attachment_dir)
+    ret = [_ for _ in os.scandir(fulldir)
+           if _.is_file() and (
+                   _.name.endswith(IMG_EXTENSIONS)
+                   or _.name.endswith(ATTACHMENT_EXTENSIONS))]
+    ret.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    return ret
 
 
 def handle_upload(request):
@@ -530,6 +572,8 @@ def handle_upload(request):
         abort(403, "Names of uploaded files must not start with a dot")
     if not re.search(r'\.\w{1,8}$', filename):
         abort(403, "Uploaded files must have a valid file extension")
+    if len(filename) > 42:
+        filename = filename[:20] + '__' + filename[-20:]
     full_path = os.path.join(BASEDIR, dest_dir, filename)
     if os.path.exists(full_path) and automatic_name:
         rand = '__' + ''.join(random.choices(string.ascii_uppercase, k=5))
@@ -545,6 +589,38 @@ def handle_upload(request):
     set_flash_message(request, msg)
     redirect('/_/admin/list/%s' % dest_dir)
     #return template('file_saved.tpl', dest_dir=dest_dir, filename=filename)
+
+
+def handle_attachment_upload(request):
+    dest_dir = request.forms.getunicode('attachment_dir') or ''
+    if not dest_dir.startswith('content'):
+        abort(403, "Invalid destination directory: {}".format(dest_dir))
+    full_dest_dir = os.path.join(BASEDIR, dest_dir)
+    if not os.path.isdir(full_dest_dir):
+        os.mkdir(full_dest_dir)
+    upload = request.files.get('upload')
+    filename = upload.filename.lower()
+    filename = re.sub(r'^.*[/\\]', '', filename)
+    filename = re.sub(r'\s+', '_', filename)
+    filename = re.sub(r'__+', '_', filename)
+    while filename.startswith('.'):
+        filename = filename[1:]
+    if len(filename) > 42:
+        filename = filename[:20] + '__' + filename[-20:]
+    if not re.search(r'\.\w{1,8}$', filename):
+        abort(403, "Uploaded files must have a valid file extension")
+    full_path = os.path.join(full_dest_dir, filename)
+    if os.path.exists(full_path) and automatic_name:
+        rand = '__' + ''.join(random.choices(string.ascii_uppercase, k=5))
+        full_path = re.sub(r'(\.\w{1,8})$', rand + r'\1', full_path)
+        filename = re.sub(r'(\.\w{1,8})$', rand + r'\1', filename)
+    upload.save(full_path)
+    msg = "Attachment file %s uploaded to %s" % (filename, dest_dir)
+    wmk_build(msg)
+    files = get_potential_attachments(dest_dir)
+    return template('edit-attachments.tpl',
+                    attachment_dir=dest_dir, files=files,
+                    msg="Uploaded: '%s'" % filename)
 
 
 def get_directories():
