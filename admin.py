@@ -655,7 +655,8 @@ def handle_attachment_upload(request):
     files = get_potential_attachments(dest_dir)
     return template('edit-attachments.tpl',
                     attachment_dir=dest_dir, files=files,
-                    msg="Uploaded: '%s'" % filename)
+                    msg="Uploaded: '%s'" % filename,
+                    img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS)
 
 
 def get_directories():
