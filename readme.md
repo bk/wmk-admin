@@ -49,6 +49,12 @@ The following settings are currently supported:
 - `preview_css`: CSS source (not URL) to use for the *Quick preview*
   function on the Edit page.
 
+- `img_to_editor_template` and `attachment_to_editor_template`: Content for
+  javascript string templates for adding images or links to attachments into
+  markdown text when clicking on the appropriate links in the file list below
+  the editor. The string `{src}` indicates the placement of the image src or
+  link href value.
+
 All settings except `password` are optional.
 
 ## TODO

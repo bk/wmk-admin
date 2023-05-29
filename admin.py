@@ -383,9 +383,34 @@ def create_dir(section, dirname):
     redirect('/_/admin/list/%s/%s' % (section, dirname))
 
 
+@post('/_/admin/create-page/<section:re:content|data|static>/<dirname:re:.*>')
+@authorize
+def create_page(section, dirname):
+    "Create new Markdown page based on title. Also fills autofields in."
+    full_dirname = os.path.join(BASEDIR, section, dirname) if dirname else os.path.join(BASEDIR, section)
+    title = request.forms.getunicode('title')
+    conf = get_config(BASEDIR, 'wmk_admin')
+    auto_metadata = conf.get('auto_metadata') or {}
+    content = f"---\ntitle: {title}\n---\n\n"
+    if 'md' in auto_metadata:
+        content = maybe_add_metadata(content, auto_metadata['md'])
+    new_filename = wmk.slugify(title) + '.md'
+    new_path = os.path.join(full_dirname, new_filename)
+    if os.path.exists(new_path):
+        abort(403, f'A file named {new_filename} already exists at {section}/{dirname}')
+    with open(new_path, 'w') as f:
+        f.write(content)
+    msg = f'Created page "{title}" in {section}/{dirname}'
+    set_flash_message(request, msg)
+    path = os.path.join(section, dirname, new_filename) \
+            if dirname else os.path.join(section, new_filename)
+    redirect('/_/admin/edit/' + path)
+
+
 @post('/_/admin/create-file/<section:re:content|data|static>/<dirname:re:.*>')
 @authorize
 def create_file(section, dirname):
+    "Create empty file"
     full_dirname = os.path.join(BASEDIR, section, dirname) if dirname else os.path.join(BASEDIR, section)
     new_filename= request.forms.getunicode('new_filename')
     if not new_filename:
@@ -399,8 +424,14 @@ def create_file(section, dirname):
         f.write('')
     msg = 'Created file %s in %s' % (new_filename, full_dirname[len(BASEDIR)+1:])
     set_flash_message(request, msg)
-    wmk_build(msg)
-    redirect('/_/admin/list/%s/%s' % (section, dirname))
+    # wmk_build(msg)
+    ext = os.path.splitext(new_filename)
+    if ext in EDITABLE_EXTENSIONS:
+        path = os.path.join(section, dirname, new_filename) \
+            if dirname else os.path.join(section, new_filename)
+        redirect('/_/admin/edit/' + path)
+    else:
+        redirect('/_/admin/list/%s/%s' % (section, dirname))
 
 
 @get('/_/admin/rmdir/<section:re:content|data|static>/<dirname:re:.+>')
@@ -531,20 +562,24 @@ def edit_form(section, filename, full_path):
             attachment_dir = os.path.join(attachment_dir, fn_base)
         if os.path.isdir(os.path.join(BASEDIR, attachment_dir)):
             nearby_files = get_potential_attachments(attachment_dir)
+    imged_tpl = conf.get('img_to_editor_template')
+    atted_tpl = conf.get('attachment_to_editor_template')
     return template('edit_form.tpl', filename=filename,
                     contents=contents, section=section, is_config=is_config,
                     editable_exts=EDITABLE_EXTENSIONS, ace_modes=ACE_EDITOR_MODES,
                     img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS,
                     preview_css=conf.get('preview_css', ''), flash_message=msg,
                     potential_attachments=potential_attachments,
-                    attachment_dir=attachment_dir, nearby_files=nearby_files)
+                    attachment_dir=attachment_dir, nearby_files=nearby_files,
+                    img_to_editor_template=imged_tpl,
+                    attachment_to_editor_template=atted_tpl)
 
 
 def get_potential_attachments(attachment_dir):
     fulldir = os.path.join(BASEDIR, attachment_dir)
     ret = [_ for _ in os.scandir(fulldir)
            if _.is_file() and (
-                   _.name.endswith(IMG_EXTENSIONS)
+                   _.name.lower().endswith(IMG_EXTENSIONS)
                    or _.name.endswith(ATTACHMENT_EXTENSIONS))]
     ret.sort(key=lambda x: x.stat().st_mtime, reverse=True)
     return ret
@@ -649,7 +684,9 @@ def maybe_add_metadata(text, metafields):
 
     Currently only the metafields `date`, `modified_date` and `created_date` are
     supported.  If specified, each is added if missing. In addition,
-    `modified_date` will be updated even if present.
+    `modified_date` will be updated even if present. If `date` is present and
+    `created_date` is not, the value of `date` will be used rather than the
+    current timestamp for `created_date`.
     """
     metafields = [_ for _ in metafields
                   if _ in ('date', 'modified_date', 'created_date')]
@@ -659,8 +696,14 @@ def maybe_add_metadata(text, metafields):
     now = str(datetime.datetime.now())[:16]
     add = []
     chg = {}
+    dateval = None
+    if 'created_date' in metafields:
+        found = re.search(r'^date: *\D?(\d\d\d\d-\d\d-\d\d[ T\d:]*)', text, flags=re.M)
+        if found:
+            dateval = found.group(1).strip()
     for field in metafields:
-        add.append({'field': field, 'val': '%s: "%s"' % (field, now)})
+        val = dateval if dateval and field=='created_date' else now
+        add.append({'field': field, 'val': '%s: "%s"' % (field, val)})
     if 'modified_date' in metafields:
         chg = {'field': 'modified_date', 'val': 'modified_date: "%s"' % now}
     if text.startswith("---\n"):
@@ -680,7 +723,7 @@ def maybe_add_metadata(text, metafields):
         prepend = "---\n"
         for it in add:
             prepend += it['val'] + "\n"
-        prepend += "---\n"
+        prepend += "---\n\n"
         text = prepend + text
     return text
 
@@ -744,16 +787,20 @@ def wmk_site(filename='index.html'):
         else:
             body = resp.body.read()
             resp.body.close()
-        body = body.replace(b'</body>', admin_marker() + b'</body>')
+        edit_url = filename.replace('//', '/').replace('/index.html', '.md').replace('index.html', 'index.md')
+        edit_url = '/_/admin/edit/content/%s' % edit_url
+        body = body.replace(b'</body>', admin_marker(edit_url).encode('utf-8') + b'</body>')
         resp.body = body
         resp.headers['Content-Length'] = str(len(body))
     return resp
 
-def admin_marker():
-    return b'''
+def admin_marker(edit_url):
+    return f'''
     <div id="in-admin-notice"
-         style="background:red;color:yellow;padding:.5em;position:fixed;bottom:0;right:0;width:200px;text-align:center">
-         <strong><small><a href="/_/admin/" style="color:yellow">Admin</a></small></strong></div>'''
+         style="background:red;color:yellow;padding:.5em;position:fixed;bottom:0;right:0;width:230px;text-align:center">
+         <strong><small><a href="/_/admin/" style="color:yellow;text-decoration:none">Admin</a></small></strong>
+         | <small><a href="{edit_url}" style="color:yellow;text-decoration:none">edit</a></small>
+    </div>'''
 
 
 

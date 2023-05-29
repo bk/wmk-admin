@@ -16,6 +16,7 @@
       <th>Name</th>
       <th class="ta-r">Size</th>
       <th>Date</th>
+      <th>Insert</th>
     </tr>
     % for file in files:
     %  stat = file.stat()
@@ -23,6 +24,13 @@
       <td><a href="{{ htdir }}/{{ file.name }}" target="_blank" class="plain">{{ file.name }}</a></td>
       <td class="ta-r">{{ stat.st_size }}</td>
       <td>{{ str(datetime.datetime.fromtimestamp(stat.st_mtime))[:16] }}</td>
+      <td>
+        % if file.name.lower().endswith(img_exts):
+        <a href="#" onclick="return img_to_editor('{{file.name}}')" class="plain">image</a>
+        % elif file.name.lower().endswith(att_exts):
+        <a href="#" onclick="return attachment_to_editor('{{file.name}}')" class="plain">link</a>
+        % end
+      </td>
     </tr>
     % end
   </table>

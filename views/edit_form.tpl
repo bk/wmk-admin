@@ -78,7 +78,7 @@
 
 % if potential_attachments:
 <div id="att-container">
-  % include('edit-attachments.tpl', att_dir=attachment_dir, files=nearby_files, msg=None)
+  % include('edit-attachments.tpl', att_dir=attachment_dir, files=nearby_files, msg=None, img_exts=img_exts, att_exts=att_exts)
 </div>
 % end
 
@@ -137,6 +137,29 @@ function show_preview() {
     document.getElementById('preview-modal').checked = true;
     need_preview = false;
   });
+  return false;
+}
+
+function add_to_editor(text) {
+  let pos = editor.getCursorPosition();
+  if (! pos || (pos.row==0 && pos.column==0))
+    pos = {row: editor.session.getLength(), column:0};
+  editor.session.insert(pos, text);
+}
+function attachment_to_editor(src) {
+  % if attachment_to_editor_template:
+  add_to_editor(`{{! attachment_to_editor_template }}`+"\n");
+  % else:
+  add_to_editor(`[click here](${src})`+"\n")
+  % end
+  return false;
+}
+function img_to_editor(src) {
+  % if img_to_editor_template:
+  add_to_editor(`{{! img_to_editor_template }}`+"\n");
+  % else:
+  add_to_editor(`![image description](${src})`+"\n")
+  % end
   return false;
 }
 
