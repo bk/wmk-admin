@@ -168,7 +168,12 @@ async function upload_attachment() {
   const form_data = new FormData();
   const filefield = document.getElementById('upload');
   form_data.append("attachment_dir", "{{ attachment_dir }}");
-  form_data.append("upload", filefield.files[0])
+  let maxi = -1;
+  for (const [i, file] of Array.from(filefield.files).entries()) {
+     form_data.append(`upload_${i}`, file);
+     maxi = i;
+  }
+  form_data.append('upload_count', maxi+1);
   try {
     const response = await fetch("/_/admin/edit-upload/", {
       method: "POST",

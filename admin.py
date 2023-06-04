@@ -633,29 +633,35 @@ def handle_attachment_upload(request):
     full_dest_dir = os.path.join(BASEDIR, dest_dir)
     if not os.path.isdir(full_dest_dir):
         os.mkdir(full_dest_dir)
-    upload = request.files.get('upload')
-    filename = upload.filename.lower()
-    filename = re.sub(r'^.*[/\\]', '', filename)
-    filename = re.sub(r'\s+', '_', filename)
-    filename = re.sub(r'__+', '_', filename)
-    while filename.startswith('.'):
-        filename = filename[1:]
-    if len(filename) > 42:
-        filename = filename[:20] + '__' + filename[-20:]
-    if not re.search(r'\.\w{1,8}$', filename):
-        abort(403, "Uploaded files must have a valid file extension")
-    full_path = os.path.join(full_dest_dir, filename)
-    if os.path.exists(full_path) and automatic_name:
-        rand = '__' + ''.join(random.choices(string.ascii_uppercase, k=5))
-        full_path = re.sub(r'(\.\w{1,8})$', rand + r'\1', full_path)
-        filename = re.sub(r'(\.\w{1,8})$', rand + r'\1', filename)
-    upload.save(full_path)
-    msg = "Attachment file %s uploaded to %s" % (filename, dest_dir)
+    upload_count = int(request.forms.get('upload_count', 0))
+    for i in range(upload_count):
+        upload = request.files.get(f'upload_{i}')
+        filename = upload.filename.lower()
+        filename = re.sub(r'^.*[/\\]', '', filename)
+        filename = re.sub(r'\s+', '_', filename)
+        filename = re.sub(r'__+', '_', filename)
+        while filename.startswith('.'):
+             filename = filename[1:]
+        if len(filename) > 42:
+             filename = filename[:20] + '__' + filename[-20:]
+        if not re.search(r'\.\w{1,8}$', filename):
+            filename += '.bin'
+        full_path = os.path.join(full_dest_dir, filename)
+        if os.path.exists(full_path) and automatic_name:
+            rand = '__' + ''.join(random.choices(string.ascii_uppercase, k=5))
+            full_path = re.sub(r'(\.\w{1,8})$', rand + r'\1', full_path)
+            filename = re.sub(r'(\.\w{1,8})$', rand + r'\1', filename)
+        upload.save(full_path)
+    if upload_count == 1:
+        msg = "Attachment file %s uploaded to %s" % (filename, dest_dir)
+        feedback = "Uploaded: '%s'" % filename
+    else:
+        msg = "%d files uploaded to %s" % (upload_count, dest_dir)
+        feedback = "Uploaded %d files" % upload_count
     wmk_build(msg)
     files = get_potential_attachments(dest_dir)
     return template('edit-attachments.tpl',
-                    attachment_dir=dest_dir, files=files,
-                    msg="Uploaded: '%s'" % filename,
+                    attachment_dir=dest_dir, files=files, msg=feedback,
                     img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS)
 
 

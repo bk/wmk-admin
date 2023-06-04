@@ -38,9 +38,9 @@
   % else:
     <p><em>No image/attachment files are yet present</em></p>
   % end
-  <p><label>Upload new image/attachment:</label></p>
+  <p><label>Upload new images or attachments:</label></p>
   <div class="grid-sm">
-    <input type="file" name="upload" id="upload" class="m-0">
+    <input type="file" name="upload" id="upload" multiple class="m-0">
     <button onclick="submit_attachment_upload()" id="start-upload" style="d-inl" class="m-0">Upload</button>
   </div>
 </div>
