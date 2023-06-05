@@ -64,7 +64,7 @@ ACE_EDITOR_MODES = {
 
 # Extensions for images and attachments (used on the edit page):
 IMG_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif', 'svg', )
-ATTACHMENT_EXTENSIONS = ('pdf', 'docx', 'odt', 'zip', 'tar', 'gz', )
+ATTACHMENT_EXTENSIONS = ('pdf', 'docx', 'odt', 'zip', 'tar', 'gz', 'mp3', 'm4a', )
 
 # Find out where wmk resides and add it to the python path
 wmkenv_info = subprocess.run(["wmk", "env", "."], cwd=BASEDIR,
