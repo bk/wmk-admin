@@ -2,6 +2,7 @@
 Description=WmkAdmin for {{ site_name }}
 
 [Service]
+Environment=PATH={{ wmk_dir }}/bin:/usr/local/bin:/usr/bin/:/bin
 User={{ site_owner_user }}
 Group={{ site_owner_group }}
 # Minimum requirements: (1) project_dir/admin is [symlink to] wmk_admin repo;
