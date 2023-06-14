@@ -814,6 +814,7 @@ def admin_marker(edit_url):
 if __name__ == '__main__':
     host = 'localhost'
     port = 7077
+    server = None
     try:
         basedir = os.path.split(os.path.dirname(__file__))[0]
         config_file = os.path.join(basedir, 'wmk_admin.yaml')
@@ -827,6 +828,8 @@ if __name__ == '__main__':
             port = conf['port']
         if 'host' in conf:
             host = conf['host']
+        if 'server' in conf:
+            server = conf['server']
     except Exception as e:
         print("WARNING: Error in loading wmk_admin.yaml: %s" % str(e))
-    run(host=host, port=port, debug=True)
+    run(host=host, port=port, debug=True, server=server)
