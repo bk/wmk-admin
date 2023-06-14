@@ -7,8 +7,6 @@ Group={{ site_owner_group }}
 # Minimum requirements: (1) project_dir/admin is [symlink to] wmk_admin repo;
 # (2) project_dir contains wmk_admin.conf; (3) project_dir/tmp exists.
 ExecStart={{ wmk_venv_dir }/bin/python {{ project_dir }}admin/admin.py
-StandardOutput=syslog
-StandardError=syslog
 SyslogIdentifier=wmk-admin-{{ site_slug }}
 Restart=always
 
