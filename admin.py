@@ -552,10 +552,14 @@ def edit_form(section, filename, full_path):
     msg = get_flash_message(request) or ''
     if msg.startswith('S:'):
         msg = msg[2:]
-    attachment_dir, fn = os.path.split(filename)
+    if is_config:
+        attachment_dir = None
+        fn = filename
+    else:
+        attachment_dir, fn = os.path.split(filename)
+        attachment_dir = os.path.join(section, attachment_dir).strip('/')
     fn_base, fn_ext = os.path.splitext(fn)
     potential_attachments = fn_ext[1:] in EDITABLE_EXTENSIONS[:18]
-    attachment_dir = os.path.join(section, attachment_dir).strip('/')
     nearby_files = []
     if potential_attachments:
         if not os.path.splitext(fn)[0] == 'index':
