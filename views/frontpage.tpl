@@ -31,8 +31,8 @@
       </p>
       <p>You can use the file manager to <em>edit</em>, <em>delete</em>,
         <em>view</em> or <em>rename/move</em> existing files, as well as to <em>add</em>
-        new files, either via <em>upload</em> or simply by creating an
-        <em>empty</em> file with a name of your choosing.</p>
+        new content, either via <em>upload</em> or simply by creating an
+        <em>empty</em> page or file.</p>
     </article>
 
     <article>
@@ -84,7 +84,22 @@
           % include('svg/eye.svg')
           View the site</a>
       </p>
-      <p>In addition to the admin pages, wmkAdmin runs a webserver for previewing the development version of the website. (You can see that it is the development version from the prominent link to Admin in the lower right corner of each page.)</p>
+      <p>In addition to the admin pages, wmkAdmin runs a webserver for previewing the <strong>development version</strong> of the website. (You can see that it is the development version from the prominent link to Admin in the lower right corner of each page.)</p>
     </article>
   </section>
 
+% if status_info and (status_info['deployed_date'] or status_info['git_status']):
+  <div class="mt-5">
+    <div class="admonition info">
+      <p class="admonition-title">Status information</p>
+      <p><strong>Last deployment:</strong> {{ str(status_info['deployed_date'])[:19] if status_info['deployed_date'] else 'UNKNOWN' }}</p>
+      % if status_info['git_last_commit']:
+        <p><strong>Last commit:</strong> {{ status_info['git_last_commit'] }}</p>
+      % end
+      % if status_info['git_status']:
+        <p><strong>Modified (<code>M</code>), deleted (<code>D</code>) or new/unknown (<code>??</code>) files:</strong></p>
+        <pre class="smaller"><code>{{ status_info['git_status'] }}</code></pre>
+      % end
+    </div>
+  </div>
+% end

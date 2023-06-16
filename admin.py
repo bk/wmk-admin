@@ -244,6 +244,7 @@ def admin_frontpage():
     conf = get_config(BASEDIR)
     site = conf.get('site', {})
     adm_conf = get_config(BASEDIR, 'wmk_admin')
+    status_info = get_status()
     deploy = adm_conf.get('deploy', False)
     site_title = None
     for k in ('name', 'title', 'site_name', 'site_title'):
@@ -252,7 +253,7 @@ def admin_frontpage():
             break
     return template('frontpage.tpl', flash_message=msg,
                     msg_status=msg_status, site_title=site_title,
-                    deploy=deploy)
+                    deploy=deploy, status_info=status_info)
 
 
 @route('/_/admin/list/<section:re:content|data|static>')
@@ -482,6 +483,27 @@ def get_configured_password(errors_fatal=True):
     if errors_fatal and not conf_pass:
         abort(403, 'admin_password is missing from wmk_admin.yaml')
     return conf_pass
+
+
+def get_status():
+    ret = {
+        'deployed_date': None,
+        'git_status': '',
+        'git_last_commit': '',
+    }
+    deploy_status_file = os.path.join(BASEDIR, 'tmp', 'deploy.log')
+    if os.path.exists(deploy_status_file):
+        st = os.stat(deploy_status_file)
+        ret['deployed_date'] = datetime.datetime.fromtimestamp(st.st_mtime)
+    if os.path.isdir(os.path.join(BASEDIR, '.git')):
+        gitstatus = subprocess.run(
+            ["git", "status", "-s"], cwd=BASEDIR, capture_output=True, text=True)
+        ret['git_status'] = gitstatus.stdout
+        commitinfo = subprocess.run(
+            ['git', 'log', '-1', '--date=iso', '--pretty=[%h] %ad'],
+            cwd=BASEDIR, capture_output=True, text=True)
+        ret['git_last_commit'] = re.sub(r' [+\-]\d\d\d\d$', '', commitinfo.stdout)
+    return ret
 
 
 def wmk_build(msg=None, hard=False):
