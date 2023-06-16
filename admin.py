@@ -180,10 +180,14 @@ def deploy_site():
         depl_res = subprocess.run(deploy_command, cwd=BASEDIR,
                                   capture_output=True, text=True)
         logfile = os.path.join(BASEDIR, 'tmp/admin.log')
+        depl_log = os.path.join(BASEDIR, 'tmp/deploy.log')
+        now = datetime.datetime.now()
         with open(logfile, 'a') as f:
-            f.write("\n=====\nRan DEPLOY at %s. Output:\n" % str(datetime.datetime.now()))
+            f.write("\n=====\nRan DEPLOY at %s. Output:\n" % str(now))
             if depl_res.stdout:
                 f.write(depl_res.stdout)
+        with open(depl_log, 'a') as f:
+            f.write("DEPLOY " + str(now) + "\n")
         set_flash_message(request, 'S:Rebuilt and published site (ran deployment command).')
     else:
         set_flash_message('No deployment command specified in configuration file')
