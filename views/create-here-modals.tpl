@@ -1,6 +1,8 @@
+% is_in_content = (section and section == 'content')
+
 <div class="mt-2 mb-2">
   <label for="create-dir-modal" role="button" class="d-inl">{{! svg['folder-plus'] }} Create folder</label>
-  <label for="create-file-modal" role="button" class="d-inl">{{! svg['file-plus'] }} New page</label>
+  <label for="create-file-modal" role="button" class="d-inl">{{! svg['file-plus'] }} {{ 'New page' if is_in_content else 'New file' }}</label>
   <label for="upload-file-modal" role="button" class="d-inl">{{! svg['upload'] }} Upload file</label>
   <form class="d-inl" action="" method="GET">
     <input type="hidden" name="sort" value="{{ 'date' if sort_by_date else 'name' }}">
@@ -31,38 +33,52 @@
   <article>
     <header>
       <label for="create-file-modal" class="close">&times;</label>
-      <h4>Create new ...</h4>
+      <h4>Create new {{ '...' if is_in_content else 'file' }}</h4>
     </header>
-    <div class="tabs ta-l">
-      <input type="radio" name="tabgroup" id="tab1" checked>
-      <label for="tab1">Page</label>
-      <input type="radio" name="tabgroup" id="tab2">
-      <label for="tab2">File</label>
-      <div class="pane pane1">
-        <p>Create a new page in the currently active folder, <code>{{section}}/{{dirname}}</code>.</p>
-          <form action="/_/admin/create-page/{{ section }}/{{ dirname }}" method="POST">
-            <label>Title of new page:</label>
-            <input type="text" name="title" required>
-            <input type="submit" class="d-inl" value="Create">
-            <p class="smaller ta-c">
-              The editing form for the new page will automatically be opened.
-            </p>
-          </form>
+    % if is_in_content:
+      <div class="tabs ta-l">
+        <input type="radio" name="tabgroup" id="tab1" checked>
+        <label for="tab1">Page</label>
+        <input type="radio" name="tabgroup" id="tab2">
+        <label for="tab2">File</label>
+        <div class="pane pane1">
+          <p>Create a new page in the currently active folder, <code>{{section}}/{{dirname}}</code>.</p>
+            <form action="/_/admin/create-page/{{ section }}/{{ dirname }}" method="POST">
+              <label>Title of new page:</label>
+              <input type="text" name="title" required>
+              <input type="submit" class="d-inl" value="Create">
+              <p class="smaller ta-c">
+                The editing form for the new page will automatically be opened.
+              </p>
+            </form>
+        </div>
+        <div class="pane pane2">
+          <p>Create a new file inside the currently active folder, <code>{{section}}/{{dirname}}</code>.</p>
+            <form action="/_/admin/create-file/{{ section }}/{{ dirname }}" method="POST">
+              <label>Filename of new file:</label>
+              <input type="text" name="new_filename">
+              <input type="submit" class="d-inl" value="Create">
+              <p class="smaller ta-c">
+                <strong>Note:</strong>
+                The file will initially be empty, but you can Edit it after creation
+                to add content.
+              </p>
+            </form>
+        </div>
       </div>
-      <div class="pane pane2">
-        <p>Create a new file inside the currently active folder, <code>{{section}}/{{dirname}}</code>.</p>
-          <form action="/_/admin/create-file/{{ section }}/{{ dirname }}" method="POST">
-            <label>Filename of new file:</label>
-            <input type="text" name="new_filename">
-            <input type="submit" class="d-inl" value="Create">
-            <p class="smaller ta-c">
-              <strong>Note:</strong>
-              The file will initially be empty, but you can Edit it after creation
-              to add content.
-            </p>
-          </form>
-      </div>
-    </div>
+    % else:
+      <p>Create a new file inside the currently active folder, <code>{{section}}/{{dirname}}</code>.</p>
+      <form action="/_/admin/create-file/{{ section }}/{{ dirname }}" method="POST">
+        <label>Filename of new file:</label>
+        <input type="text" name="new_filename">
+        <input type="submit" class="d-inl" value="Create">
+        <p class="smaller ta-c">
+          <strong>Note:</strong>
+          The file will initially be empty, but you can Edit it after creation
+          to add content.
+        </p>
+      </form>
+    % end
   </article>
 </div>
 
