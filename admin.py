@@ -460,7 +460,9 @@ def del_file(section, filename):
     msg = 'Deleted file %s from %s' % (filename, section)
     wmk_build(msg)
     set_flash_message(request, msg)
-    redirect('/_/admin/list/%s/%s' % (section, list_dirname))
+    page = int(request.params.get('p', 1))
+    maybe_page = f'?p={page}' if page > 1 else ''
+    redirect('/_/admin/list/%s/%s%s' % (section, list_dirname, maybe_page))
 
 
 # ------ Helpers below ------------

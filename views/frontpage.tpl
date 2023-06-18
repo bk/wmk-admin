@@ -97,10 +97,10 @@
         <p><strong>Last commit:</strong> {{ status_info['git_last_commit'] }}</p>
       % end
       % if status_info['git_status']:
-        <p><strong>Modified (<code>M</code>), deleted (<code>D</code>) or new/unknown (<code>??</code>) files:</strong></p>
+        <p><strong>Modified (<em>M</em>), deleted (<em>D</em>) or new/unknown (<em>??</em>) files:</strong></p>
         <pre class="smaller"><code>{{ status_info['git_status'] }}</code></pre>
       % elif status_info['git_last_commit']:
-        <p><strong>Up-to-date:</strong> No pending changes waiting to be published.</p>
+        <p><strong>Up to date:</strong> No pending changes waiting to be published.</p>
       % end
     </div>
   </div>

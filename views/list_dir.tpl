@@ -13,6 +13,7 @@ current_path = "%s%s%s" % (section, '/' if dirname else '', dirname)
 svg_files = [_ for _ in os.listdir(svg_dir) if _.endswith('.svg')]
 slurp = lambda nam: (f:=open(nam),f.read(),f.close())[1]
 svg = dict([ (os.path.splitext(it)[0], slurp(os.path.join(svg_dir, it))) for it in svg_files ])
+maybe_page = f'?p={page}' if page and page > 1 else ''
 %>
 
 <hgroup>
@@ -73,7 +74,7 @@ svg = dict([ (os.path.splitext(it)[0], slurp(os.path.join(svg_dir, it))) for it 
       % if it.name.endswith(edit_ok):
         <a href="/_/admin/edit/{{ current_path }}/{{ it.name }}" title="Edit">{{! svg['edit'] }}</a>
       % end
-      <a href="/_/admin/delete/{{ current_path }}/{{ it.name }}" onclick="return confirm('Are you sure you want to delete this?')" title="Delete">{{! svg['trash']}}</a>
+      <a href="/_/admin/delete/{{ current_path }}/{{ it.name }}{{ maybe_page }}" onclick="return confirm('Are you sure you want to delete this?')" title="Delete">{{! svg['trash']}}</a>
       <label role="link" class="d-inl" for="move-{{ fileid(it.name) }}-modal" title="Move/Rename">{{! svg['copy'] }}</label>
       % if section == 'content' and it.name.endswith(view_ok):
         % if it.name.startswith('index.'):
