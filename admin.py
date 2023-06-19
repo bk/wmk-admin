@@ -512,11 +512,12 @@ def get_status():
     return ret
 
 
-def wmk_build(msg=None, hard=False):
+def wmk_build(msg=None, hard=False, quick=False):
     start = datetime.datetime.now()
     if hard and msg:
         msg += ' - HARD REBUILD!'
     if hard:
+        quick = False
         tmpdir = os.path.join(BASEDIR, 'tmp')
         tmpfiles = os.listdir(tmpdir)
         for fn in tmpfiles:
@@ -526,14 +527,14 @@ def wmk_build(msg=None, hard=False):
     old_stdout = sys.stdout
     tmp_stdout = io.StringIO()
     sys.stdout = tmp_stdout
-    wmk.main(BASEDIR)
+    wmk.main(BASEDIR, quick=quick)
     sys.stdout = old_stdout
     if msg:
         logfile = os.path.join(BASEDIR, 'tmp/admin.log')
         end = datetime.datetime.now()
         duration = end - start
         with open(logfile, 'a') as f:
-            f.write("\n=====\nRan wmk build. Reason: %s\n" % msg)
+            f.write("\n=====\nRan wmk %sbuild. Reason: %s\n" % ('quick ' if quick else '', msg))
             f.write("[Timing: %s to %s; duration=%s]\n" % (str(start), str(end), str(duration)))
             show_lines = [_ for _ in tmp_stdout.getvalue().split("\n")
                           if 'WARN' in _ or 'ERR' in _]
@@ -783,7 +784,8 @@ def save_file(section, filename, request):
             new_contents, auto_metadata[ext[1:]])
     with open(full_path, 'w') as f:
         f.write(new_contents)
-    wmk_build('Saved file ' + full_path)
+    quick_build = section and section == 'content'
+    wmk_build('Saved file ' + full_path, quick=quick_build)
     redir_url = ''
     if is_config:
         set_flash_message(
