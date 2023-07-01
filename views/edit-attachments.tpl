@@ -1,3 +1,6 @@
+% from PIL import Image
+% is_image = lambda nam: nam.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))
+% imsiz = lambda f: Image.open(f.path).size
 % import datetime
 % htdir = attachment_dir.replace('content', '', 1) or '/'
 
@@ -21,8 +24,18 @@
     % for file in files:
     %  stat = file.stat()
     <tr>
-      <td><a href="{{ htdir }}/{{ file.name }}" target="_blank" class="plain">{{ file.name }}</a></td>
-      <td class="ta-r">{{ stat.st_size }}</td>
+      <td>
+        % if is_image(file.name):
+        <img src="{{ htdir }}/{{ file.name }}" loading="lazy" width="80" alt="preview">
+        % end
+        <a href="{{ htdir }}/{{ file.name }}" target="_blank" class="plain">{{ file.name }}</a>
+      </td>
+      <td class="ta-r">
+        {{ stat.st_size }}
+        % if is_image(file.name):
+        <br>({{ '%dx%d' % imsiz(file) }})
+        % end
+      </td>
       <td>{{ str(datetime.datetime.fromtimestamp(stat.st_mtime))[:16] }}</td>
       <td>
         % if file.name.lower().endswith(img_exts):
