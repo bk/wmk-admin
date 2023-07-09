@@ -67,7 +67,12 @@ maybe_page = f'?p={page}' if page and page > 1 else ''
         {{ it.name }}
       % end
     </td>
-    <td class="ta-r size">{{ stat.st_size }}</td>
+    <td class="ta-r size">
+      {{ stat.st_size }}
+      % if it.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+      <br><small>({{ '%dx%d' % imsiz(it) }})</small>
+      % end
+    </td>
     <td class="mtime">{{ str(mtime)[:16] }}</td>
     <td class="actions ta-r">
     % if typ == 'file':

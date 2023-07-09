@@ -78,7 +78,7 @@
 
 % if potential_attachments:
 <div id="att-container">
-  % include('edit-attachments.tpl', att_dir=attachment_dir, files=nearby_files, msg=None, img_exts=img_exts, att_exts=att_exts)
+  % include('edit-attachments.tpl', att_dir=attachment_dir, files=nearby_files, msg=None, img_exts=img_exts, att_exts=att_exts, imsiz=imsiz)
 </div>
 % end
 

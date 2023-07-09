@@ -11,6 +11,7 @@ import subprocess
 import yaml
 import shutil
 import hashlib
+from PIL import Image
 
 import bottle
 from bottle import (
@@ -309,7 +310,7 @@ def list_dir(section, dirname=''):
         editable_exts=EDITABLE_EXTENSIONS, svg_dir=svg_dir,
         paginated=paginated, pagecount=pagecount, page=page,
         entry_count=entry_count, sort_by_date=sort_by_date,
-        search=search, total_entries=total_entries,
+        search=search, total_entries=total_entries, imsiz=imsiz,
     )
 
 @post('/_/admin/move/')
@@ -543,6 +544,12 @@ def wmk_build(msg=None, hard=False, quick=False):
     tmp_stdout.close()
 
 
+def imsiz(f):
+    path = f.path if hasattr(f, 'path') else f
+    with Image.open(path) as im:
+        return im.size
+
+
 def get_flash_message(request):
     msg = None
     filename = (is_logged_in(request) or '').replace('.session', '.flash')
@@ -605,7 +612,7 @@ def edit_form(section, filename, full_path):
                     potential_attachments=potential_attachments,
                     attachment_dir=attachment_dir, nearby_files=nearby_files,
                     img_to_editor_template=imged_tpl,
-                    attachment_to_editor_template=atted_tpl)
+                    attachment_to_editor_template=atted_tpl, imsiz=imsiz)
 
 
 def get_potential_attachments(attachment_dir):
@@ -695,7 +702,8 @@ def handle_attachment_upload(request):
     files = get_potential_attachments(dest_dir)
     return template('edit-attachments.tpl',
                     attachment_dir=dest_dir, files=files, msg=feedback,
-                    img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS)
+                    img_exts=IMG_EXTENSIONS, att_exts=ATTACHMENT_EXTENSIONS,
+                    imsiz=imsiz)
 
 
 def get_directories():

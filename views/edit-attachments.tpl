@@ -1,12 +1,6 @@
-% from PIL import Image
 % import datetime
 % is_image = lambda nam: nam.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))
 % htdir = attachment_dir.replace('content', '', 1) or '/'
-<%
-def imsiz(f):
-    with Image.open(f.path) as im:
-        return im.size
-%>
 
 <div id="att-container-inner" class="ba-1 mt-2 mb-2 p-2 bg-accent borad">
   <hgroup>
