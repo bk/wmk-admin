@@ -827,6 +827,13 @@ def wmk_site(filename='index.html'):
     full_path = os.path.join(root, filename)
     if os.path.isdir(full_path):
         filename += '/index.html'
+    conf = get_config(BASEDIR, 'wmk_admin')
+    show_admin_overlay = True
+    if 'show_admin_overlay' in conf:
+        if str(conf['show_admin_overlay']) in ('', '0', 'false', 'False', 'no'):
+            show_admin_overlay = False
+        if conf['show_admin_overlay'] in ('logged-in', 'admin', 'admin-only'):
+            show_admin_overlay = True if is_logged_in(request) else False
     resp = static_file(filename, root=root)
     if 'Content-Type' in resp.headers and resp.headers['Content-Type'].startswith('text/html'):
         if isinstance(resp.body, str):
@@ -838,7 +845,8 @@ def wmk_site(filename='index.html'):
             resp.body.close()
         edit_url = filename.replace('//', '/').replace('/index.html', '.md').replace('index.html', 'index.md')
         edit_url = '/_/admin/edit/content/%s' % edit_url
-        body = body.replace(b'</body>', admin_marker(edit_url).encode('utf-8') + b'</body>')
+        if show_admin_overlay:
+            body = body.replace(b'</body>', admin_marker(edit_url).encode('utf-8') + b'</body>')
         resp.body = body
         resp.headers['Content-Length'] = str(len(body))
     return resp

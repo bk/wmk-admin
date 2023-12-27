@@ -24,9 +24,9 @@ It requires wmk v1.3.0 or later.
 
 The following settings are currently supported:
 
-- `password`: The SHA-256 sum of the password to the admin pages, in hexadecimal
-  form. (There is no distinction between different users, so only a password is
-  needed.)
+- `admin_password`: The SHA-256 sum of the password to the admin pages, in
+  hexadecimal form. (There is no distinction between different users, so only a
+  password is needed.)
 
 - `host`: The host or IP for the admin server. Default: `localhost`.
 
@@ -55,13 +55,20 @@ The following settings are currently supported:
   the editor. The string `{src}` indicates the placement of the image src or
   link href value.
 
-All settings except `password` are optional.
+- `show_admin_overlay`: By default, the preview of the website includes a
+  prominent overlay in the bottom-right corner of each page, with a link to the
+  admin frontpage as well as to an editing form for the current page (if
+  applicable). This can be turned off by setting `show_admin_overlay` to `false`.
+  The overlay can also be set to be visible only to a logged-in user by setting
+  the value of this key to `logged-in` or `admin`.
+
+All settings except `admin_password` are optional.
 
 ## TODO
 
 Potential features and improvements in the future:
 
-- Git interaction.
+- Improved Git interaction.
 - Validate yaml and json before saving.
 - Catch more errors and notify sensibly about them.
 - View build logs.
