@@ -18,6 +18,7 @@
             <li><a href="/_/admin/list/content/" class="text">Content</a></li>
             <li><a href="/_/admin/list/data/" class="text">Data</a></li>
             <li><a href="/_/admin/list/static/" class="text">Static</a></li>
+            <li><a href="/_/admin/list/templates/" class="text">Templates</a></li>
           </ul>
           % if not title == 'Login':
           <ul>

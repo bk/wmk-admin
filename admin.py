@@ -31,7 +31,9 @@ EDITABLE_EXTENSIONS = (
     'org', 'rst', 'tex', 'man', 'rtf', 'textile', 'xml', 'jats', 'tei', 'docbook',
     # other common text-based formats:
     'yaml', 'yml', 'json', 'js', 'css', 'scss',
-    'csv', 'txt', 'sgml', 'ini', 'toml', 'svg', )
+    'csv', 'txt', 'sgml', 'ini', 'toml', 'svg',
+    # Mako templates:
+    'mhtml', 'mc', 'mako', )
 
 # Map the above extensions to Ace Editor modes.
 # Without available Ace modes: org, man, rtf, csv, txt
@@ -61,6 +63,9 @@ ACE_EDITOR_MODES = {
     'ini': 'ini',
     'toml': 'toml',
     'svg': 'xml',
+    'mhtml': 'html_ruby',
+    'mc': 'html_ruby',
+    'mako': 'html_ruby',
 }
 
 # Extensions for images and attachments (used on the edit page):
@@ -195,7 +200,7 @@ def deploy_site():
     redirect('/_/admin/')
 
 
-@get('/_/admin/edit/<section:re:content|data|static>/<filename:re:.*>')
+@get('/_/admin/edit/<section:re:content|data|static|templates>/<filename:re:.*>')
 @authorize
 def content_file_form(section, filename):
     root = os.path.join(BASEDIR, section)
@@ -210,7 +215,7 @@ def content_file_form(section, filename):
     return edit_form(section, filename, full_path)
 
 
-@post('/_/admin/edit/<section:re:content|data|static>/<filename:re:.*>')
+@post('/_/admin/edit/<section:re:content|data|static|templates>/<filename:re:.*>')
 @authorize
 def content_file_save(section, filename):
     return save_file(section, filename, request)
@@ -261,8 +266,8 @@ def admin_frontpage():
                     deploy=deploy, status_info=status_info)
 
 
-@route('/_/admin/list/<section:re:content|data|static>')
-@route('/_/admin/list/<section:re:content|data|static>/<dirname:re:.*>')
+@route('/_/admin/list/<section:re:content|data|static|templates>')
+@route('/_/admin/list/<section:re:content|data|static|templates>/<dirname:re:.*>')
 @authorize
 def list_dir(section, dirname=''):
     start = datetime.datetime.now()
@@ -282,6 +287,8 @@ def list_dir(section, dirname=''):
     dir_entries.sort(**ordering)
     total_entries = len(dir_entries)
     search = request.params.getunicode('search')
+    # TODO: search in subdirs as well (although that requires some
+    #       changes to the file list format)
     if search and search.strip():
         search_expr = wmk.slugify(search)
         if search_expr:
@@ -289,6 +296,13 @@ def list_dir(section, dirname=''):
             for it in dir_entries:
                 if search_expr in it.name:
                     keep.append(it)
+                elif it.name.endswith(('.md', '.mdwn', '.markdown')):
+                    with open(os.path.join(full_dirname, it.name)) as f:
+                        for line in f:
+                            if line == '---':
+                                break
+                            if re.match(r'title:.*'+search, line, flags=re.I):
+                                keep.append(it)
             dir_entries = keep
     flash_message = get_flash_message(request)
     svg_dir = os.path.join(bottle.TEMPLATE_PATH[0], 'svg')
@@ -336,7 +350,7 @@ def move_or_rename():
     dest_dir = request.forms.getunicode('dest_dir')
     orig_name = request.forms.getunicode('orig_name')
     new_name = request.forms.getunicode('new_name')
-    okdirs = ('content', 'data', 'static')
+    okdirs = ('content', 'data', 'static', 'templates')
     if not from_dir.startswith(okdirs) and dest_dir.startswith(okdirs):
         abort(403, 'Move/rename outside authorized directories attempted')
     if not new_name or new_name.startswith('.'):
@@ -370,7 +384,7 @@ def move_or_rename():
     redirect('/_/admin/list/%s%s' % (from_dir, maybe_slash))
 
 
-@post('/_/admin/create-dir/<section:re:content|data|static>/<dirname:re:.*>')
+@post('/_/admin/create-dir/<section:re:content|data|static|templates>/<dirname:re:.*>')
 @authorize
 def create_dir(section, dirname):
     full_dirname = os.path.join(BASEDIR, section, dirname) if dirname else os.path.join(BASEDIR, section)
@@ -389,7 +403,7 @@ def create_dir(section, dirname):
     redirect('/_/admin/list/%s/%s' % (section, dirname))
 
 
-@post('/_/admin/create-page/<section:re:content|data|static>/<dirname:re:.*>')
+@post('/_/admin/create-page/<section:re:content|data|static|templates>/<dirname:re:.*>')
 @authorize
 def create_page(section, dirname):
     "Create new Markdown page based on title. Also fills autofields in."
@@ -413,7 +427,7 @@ def create_page(section, dirname):
     redirect('/_/admin/edit/' + path)
 
 
-@post('/_/admin/create-file/<section:re:content|data|static>/<dirname:re:.*>')
+@post('/_/admin/create-file/<section:re:content|data|static|templates>/<dirname:re:.*>')
 @authorize
 def create_file(section, dirname):
     "Create empty file"
@@ -440,7 +454,7 @@ def create_file(section, dirname):
         redirect('/_/admin/list/%s/%s' % (section, dirname))
 
 
-@get('/_/admin/rmdir/<section:re:content|data|static>/<dirname:re:.+>')
+@get('/_/admin/rmdir/<section:re:content|data|static|templates>/<dirname:re:.+>')
 @authorize
 def remove_dir(section, dirname):
     full_dirname = os.path.join(BASEDIR, section, dirname)
@@ -452,7 +466,7 @@ def remove_dir(section, dirname):
     redirect('/_/admin/list/%s/%s' % (section, list_dirname))
 
 
-@get('/_/admin/delete/<section:re:content|data|static>/<filename:re:.+>')
+@get('/_/admin/delete/<section:re:content|data|static|templates>/<filename:re:.+>')
 @authorize
 def del_file(section, filename):
     full_filename = os.path.join(BASEDIR, section, filename)

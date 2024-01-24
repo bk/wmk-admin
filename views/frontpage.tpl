@@ -24,9 +24,10 @@
 
       <p class="larger">You can <strong>manage the files</strong> in the
         <a href="/_/admin/list/content/">content</a>,
-        <a href="/_/admin/list/data/">data</a> and
-        <a href="/_/admin/list/static/">static</a>
-        folders. Links to these three base directories are always present in the
+        <a href="/_/admin/list/data/">data</a>,
+        <a href="/_/admin/list/static/">static</a> and
+        <a href="/_/admin/list/templates/">templates</a>
+        folders. Links to these four base directories are always present in the
         navigation bar at the top.
       </p>
       <p>You can use the file manager to <em>edit</em>, <em>delete</em>,
