@@ -32,6 +32,10 @@ The following settings are currently supported:
 
 - `port`: The port for the admin server: Default: 7077.
 
+- `server`: The wsgi server to use. The default is wsgiref, but something else
+  is recommended for any kind of heavy use. Good options are `bjoern`, `cheroot`
+  and `paste`.
+
 - `deploy`: A shell command to run from the base directory of the project.
   The intention if for this to deploy any changes to the webserver where
   the published site is running, but obviously it can be used for other purposes
@@ -60,9 +64,16 @@ The following settings are currently supported:
   admin frontpage as well as to an editing form for the current page (if
   applicable). This can be turned off by setting `show_admin_overlay` to `false`.
   The overlay can also be set to be visible only to a logged-in user by setting
-  the value of this key to `logged-in` or `admin`.
+  the value of this key to either `logged-in` or `admin`.
 
-All settings except `admin_password` are optional.
+- `recently_changed`: A dictionary with settings for the "Recently changed
+  files" component, which is an optional part of the admin front page. The
+  dictionary should have at least the key `type` (which must have a value of
+  either `git` or `find`). It can optionally have the keys `days_back` (default:
+  30), `dirs` (default `['content', 'data', 'templates', 'static']`),
+  `extensions` (default: all editatble extensions), and `limit` (default: 20).
+
+All `wmk_admin.yaml` settings except `admin_password` are optional.
 
 ## TODO
 

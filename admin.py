@@ -256,6 +256,8 @@ def admin_frontpage():
     adm_conf = get_config(BASEDIR, 'wmk_admin')
     status_info = get_status()
     deploy = adm_conf.get('deploy', False)
+    recent_changes = get_recently_changed(
+        adm_conf.get('recently_changed', {}))
     site_title = None
     for k in ('name', 'title', 'site_name', 'site_title'):
         site_title = site.get(k, None)
@@ -263,7 +265,8 @@ def admin_frontpage():
             break
     return template('frontpage.tpl', flash_message=msg,
                     msg_status=msg_status, site_title=site_title,
-                    deploy=deploy, status_info=status_info)
+                    deploy=deploy, status_info=status_info,
+                    adm_conf=adm_conf, recent_changes=recent_changes)
 
 
 @route('/_/admin/list/<section:re:content|data|static|templates>')
@@ -636,6 +639,76 @@ def get_potential_attachments(attachment_dir):
                    _.name.lower().endswith(IMG_EXTENSIONS)
                    or _.name.endswith(ATTACHMENT_EXTENSIONS))]
     ret.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    return ret
+
+
+def get_recently_changed(settings):
+    """
+    Get list of recently changed files. Each item in the list is a tuple
+    consisting of a filename and a date object.
+    """
+    typ = settings.get('type', None)
+    if not typ:
+        return []
+    days = settings.get('days_back', 30)
+    default_dirs = ('content', 'data', 'templates', 'static')
+    dirs = settings.get('dirs', [])
+    dirs = [_ for _ in dirs if _ in default_dirs]
+    dirs = tuple(dirs) or tuple(default_dirs)
+    exts = settings.get('extensions', EDITABLE_EXTENSIONS)
+    exts = tuple(exts)
+    limit = settings.get('limit', 20)
+    ret = []
+    cnt = 0
+    i2d = lambda s: datetime.date(*[int(_) for _ in s.split('-')])
+    if typ == 'git':
+        cmd = ["git", "log",
+               "--since='{} days ago'".format(days),
+               "--name-only", "--date=iso", "--pretty=format:%ad"]
+        info = subprocess.run(
+            cmd, cwd=BASEDIR, capture_output=True, text=True)
+        lines = info.stdout.splitlines()
+        seen = set()
+        curdate = None
+        for line in lines:
+            if not line:
+                continue
+            founddate = re.search(r'^(\d{4}-\d{2}-\d{2}) ', line)
+            if founddate:
+                curdate = founddate.group(1)
+                continue
+            if not (line.startswith(dirs) and line.endswith(exts)):
+                continue
+            if line in seen:
+                continue
+            cnt += 1
+            if cnt > limit:
+                break
+            seen.add(line)
+            ret.append((line, i2d(curdate)))
+    elif typ == 'find':
+        # NOTE: This assumes GNU find ('%T+' format)
+        cmd = ["find",
+             "content", "data", "templates", "static",
+             "-mtime", '-'+str(days), "-type", "f",
+             "-printf", '%T+ %h/%f\\n']
+        info = subprocess.run(
+            cmd, cwd=BASEDIR, capture_output=True, text=True)
+        lines = info.stdout.splitlines()
+        lines.sort(reverse=True)
+        for line in lines:
+            if not ' ' in line:
+                continue
+            dags, filename = line.split(' ', 1)
+            if not (filename.startswith(dirs) and filename.endswith(exts)):
+                continue
+            cnt += 1
+            if cnt > limit:
+                break
+            dags = re.sub(r'\+.*', '', dags)
+            ret.append((filename, i2d(dags)))
+    else:
+        raise Execption("Configuration error: unknown type '{}'".format(typ))
     return ret
 
 

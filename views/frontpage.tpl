@@ -89,8 +89,32 @@
     </article>
   </section>
 
-% if status_info and (status_info['deployed_date'] or status_info['git_status']):
-  <div class="mt-5">
+% show_recent = adm_conf.get('recently_changed')
+% show_status = status_info and (status_info['deployed_date'] or status_info['git_status'])
+
+% if show_recent:
+  <div class="mt-3">
+    <div class="admonition success">
+      <p class="admonition-title">Recent changes</p>
+      % if recent_changes:
+        <ul>
+        % for fn, dt in recent_changes:
+          <li><a href="/_/admin/edit/{{ fn }}">{{ fn }}</a> <span class="smaller text-muted">[{{ str(dt) }}]</span></li>
+        % end
+        </ul>
+      % else:
+        <p class="text-muted"><em>No files have been changed for the last
+          {{ adm_conf['recently_changed'].get('days_back', 30) }} days.</em></p>
+      % end
+      % if adm_conf['recently_changed']['type'] == 'git':
+        <p class="smaller"><strong>NOTE:</strong> Only deployed changes are shown.</p>
+      % end
+    </div>
+  </div>
+% end
+
+% if show_status:
+  <div class="mt-3">
     <div class="admonition info">
       <p class="admonition-title">Status information</p>
       <p><strong>Last deployment:</strong> {{ str(status_info['deployed_date'])[:19] if status_info['deployed_date'] else 'UNKNOWN' }}</p>
