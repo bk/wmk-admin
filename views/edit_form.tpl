@@ -11,14 +11,32 @@
   % view_url = '/' + (os.path.dirname(filename) if is_index else filename[:-(len(ext)+1)]) + '/'
   % view_url = view_url.replace('//', '/')
 % end
+% fn_path = ''
+% fn = filename
+% if '/' in filename:
+  % found = re.search(r'(^.*)/(.*)', filename)
+  % fn_path = found.group(1)
+  % fn = found.group(2)
+  % fn_path = fn_path.split('/')
+% end
 
 <hgroup>
   <h2>Edit file</h2>
 % if is_config:
-  <p><strong>Editing site configuration file:</strong> <code>{{ filename }}</code></p>
+  <p><strong>Editing site configuration file:</strong> {{ filename }}</p>
 % else:
   <p>
-    <strong>Editing:</strong> <code>{{ section }}/{{ filename }}</code>
+    <strong>Editing:</strong> <a href="/_/admin/list/{{ section }}">{{ section }}</a>
+  % if fn_path:
+    % for i, it in enumerate(fn_path):
+      % if i == 0:
+        / <a href="/_/admin/list/{{ section }}/{{ it }}">{{ it }}</a>
+      % else:
+        / <a href="/_/admin/list/{{ section }}/{{ '/'.join(fn_path[:i+1]) }}">{{ it }}</a>
+      % end
+    % end
+  % end
+  / <strong>{{ fn }}</strong>
   % if view_url:
     &ndash; <a href="{{ view_url }}" target="_blank">View on site</a>
   % end
