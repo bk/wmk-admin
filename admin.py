@@ -774,7 +774,7 @@ def handle_attachment_upload(request):
         if not re.search(r'\.\w{1,8}$', filename):
             filename += '.bin'
         full_path = os.path.join(full_dest_dir, filename)
-        if os.path.exists(full_path) and automatic_name:
+        if os.path.exists(full_path):
             rand = '__' + ''.join(random.choices(string.ascii_uppercase, k=5))
             full_path = re.sub(r'(\.\w{1,8})$', rand + r'\1', full_path)
             filename = re.sub(r'(\.\w{1,8})$', rand + r'\1', filename)
